@@ -13,6 +13,7 @@ const highlights = [
     title: "Security & Performance",
     text: "MongoDB connection reuse, server-side validation, and duplicate-booking checks are built into the starter.",
   },
+  
 ];
 
 const flowCards = [
