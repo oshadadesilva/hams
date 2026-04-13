@@ -45,10 +45,10 @@ export default function DoctorDashboard() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:w-88 lg:grid-cols-1">
               <Link
-                href="/doctor/dashboard/availability"
-                className="rounded-full bg-teal-700 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-teal-800"
-              >
-                Set Availability
+                href="/doctors"
+                 className="rounded-full bg-teal-700 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-teal-800"
+>
+              Manage Doctor Schedules
               </Link>
               <Link
                 href="/"
@@ -135,9 +135,9 @@ export default function DoctorDashboard() {
             <article className="rounded-4xl border border-(--line) bg-(--panel) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)]">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">My Availability</p>
-                <Link href="/doctor/dashboard/availability" className="text-xs font-medium text-teal-700 hover:underline">
-                  Edit →
-                </Link>
+                  <Link href="/doctors" className="text-xs font-medium text-teal-700 hover:underline">
+                    Edit →
+                  </Link>
               </div>
               <ul className="mt-4 space-y-2 text-sm">
                 {availabilitySlots.filter(s => s.available).slice(0, 5).map((slot) => (
