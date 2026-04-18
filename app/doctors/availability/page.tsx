@@ -113,6 +113,10 @@ export default function DoctorsPage() {
         );
     }
 
+    function deleteSlot(index: number) {
+    setEditorSlots((current) => current.filter((_, i) => i !== index));
+}
+
     async function handleAvailabilitySave() {
         if (!selectedDoctorId || selectedDoctorId.startsWith("demo-")) {
             toast.info("Connect MongoDB to save availability changes.");
@@ -178,7 +182,7 @@ export default function DoctorsPage() {
                             <div className="mt-5 space-y-4">
                                 {editorSlots.length > 0 ? (
                                     editorSlots.map((slot, index) => (
-                                        <div key={`${slot.day}-${index}`} className="grid gap-3 rounded-3xl border border-slate-200 bg-white p-4 md:grid-cols-4">
+                                        <div key={`${slot.day}-${index}`} className="grid gap-3 rounded-3xl border border-slate-200 bg-white p-4 md:grid-cols-5">
                                             <select
                                                 title="SlotDay"
                                                 value={slot.day}
@@ -206,9 +210,22 @@ export default function DoctorsPage() {
                                                 <input
                                                     type="checkbox"
                                                     checked={slot.isAvailable}
-                                                    onChange={(event) => updateEditorSlot(index, "isAvailable", event.target.checked)} />
-                                                Available
+                                                    onChange={(event) => updateEditorSlot(index, "isAvailable", event.target.checked)}
+                                                     />
+                                                     {slot.isAvailable ? "Available" : "Unavailable"}
+                                            
                                             </label>
+
+                                              {/* Delete button column */}
+  <button
+    type="button"
+    onClick={() => deleteSlot(index)}
+    className="rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100"
+  >
+    Delete
+  </button>   
+                                                
+
                                         </div>
                                     ))
                                 ) : (
