@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
-import { demoDoctors, generateHalfHourSlots, getDayName, type DoctorSeed } from "@/lib/demo-data";
+import { generateHalfHourSlots, getDayName, type DoctorSeed } from "@/lib/demo-data";
 
 type AvailabilitySlot = DoctorSeed["availability"][number];
 
@@ -35,53 +35,49 @@ export default function AppointmentsPage() {
   const [reason, setReason] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  // useEffect(() => {
-  //   const loadDoctors = async () => {
-  //     try {
-  //       const response = await fetch("/api/doctors");
-  //       const data = await response.json();
-  //       if (response.ok && data.success) {
-  //         setDoctors(data.doctors);
-  //         setSelectedDoctorId(data.doctors[0]?._id ?? "");
-  //         return;
-  //       }
-  //     } catch (error) {
-  //       console.error(error);
-  //     }
+  useEffect(() => {
+    const loadDoctors = async () => {
+      try {
+        const response = await fetch("/api/doctors");
+        const data = await response.json();
+        if (response.ok && data.success) {
+          setDoctors(data.doctors);
+          setSelectedDoctorId(data.doctors[0]?._id ?? "");
 
-  //     const fallback = demoDoctors.map((doctor, index) => ({
-  //       ...doctor,
-  //       _id: `demo-${index + 1}`,
-  //     }));
-  //     setDoctors(fallback);
-  //     setSelectedDoctorId(fallback[0]?._id ?? "");
-  //     toast.info("Using demo doctor data until MongoDB is available.");
-  //   };
+          return;
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to load doctors. Check your MongoDB connection and try again.");
+      }
+    };
 
-  //   const loadAppointments = async () => {
-  //     try {
-  //       const response = await fetch("/api/appointments");
-  //       const data = await response.json();
-  //       if (response.ok && data.success) {
-  //         setAppointments(data.appointments);
-  //       }
-  //     } catch (error) {
-  //       console.error(error);
-  //     }
-  //   };
+    const loadAppointments = async () => {
+      try {
+        const response = await fetch("/api/appointments");
+        const data = await response.json();
+        if (response.ok && data.success) {
+          setAppointments(data.appointments);
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to load appointments. Check your MongoDB connection and try again.");
+      }
+    };
 
-  //   void loadDoctors();
-  //   void loadAppointments();
-  // }, [toast]);
+    void loadDoctors();
+    void loadAppointments();
+  }, [toast]);
 
-  const selectedDoctor = useMemo(
-    () => doctors.find((doctor) => doctor._id === selectedDoctorId),
+  const selectedDoctor = useMemo(() =>
+    doctors.find((doctor) => doctor._id === selectedDoctorId),
     [doctors, selectedDoctorId]
   );
 
   const availableSlots = useMemo(() => {
     if (!selectedDoctor || !appointmentDate) {
-      return [] as string[];
+      const doctor = doctors.find((doctor) => doctor._id === selectedDoctorId);
+      return doctor ? doctor.availability.flatMap((slot: AvailabilitySlot) => generateHalfHourSlots(slot.startTime, slot.endTime)) : [];
     }
 
     const dayName = getDayName(appointmentDate);
@@ -100,13 +96,13 @@ export default function AppointmentsPage() {
       .filter((slot) => slot.day === dayName && slot.isAvailable)
       .flatMap((slot: AvailabilitySlot) => generateHalfHourSlots(slot.startTime, slot.endTime))
       .filter((slot) => !bookedStarts.has(slot));
-  }, [appointmentDate, appointments, selectedDoctor]);
+  }, [appointmentDate, appointments, selectedDoctor, doctors, selectedDoctorId]);
 
-  // useeffect(() => {
-  //   setappointmenttime(availableslots[0] ?? "");
-  // }, [availableslots]);
+  useEffect(() => {
+    setAppointmentTime(availableSlots[0] ?? "");
+  }, [availableSlots]);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSaving(true);
 

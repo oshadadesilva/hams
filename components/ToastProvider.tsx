@@ -84,9 +84,12 @@ export function useToast() {
     throw new Error("useToast must be used within ToastProvider.");
   }
 
-  return {
-    success: (title: string) => context.showToast(title, "success"),
-    error: (title: string) => context.showToast(title, "error"),
-    info: (title: string) => context.showToast(title, "info"),
-  };
+  return useMemo(
+    () => ({
+      success: (title: string) => context.showToast(title, "success"),
+      error: (title: string) => context.showToast(title, "error"),
+      info: (title: string) => context.showToast(title, "info"),
+    }),
+    [context]
+  );
 }
