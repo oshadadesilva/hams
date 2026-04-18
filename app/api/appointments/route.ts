@@ -55,26 +55,26 @@ export async function GET(request: Request) {
   }
 }
 
-/*export async function POST(request: Request) {
+export async function POST(request: Request) {
   const auth = requireAuth(request, ["admin", "patient"]);
   if (auth.response) {
     return auth.response;
-  } */
+  } 
 
-export async function POST(request: Request) {
+/*export async function POST(request: Request) {
   // Allow anonymous booking – no auth required
   // const auth = requireAuth(request, ["admin", "patient"]);
-  // if (auth.response) return auth.response;
+  // if (auth.response) return auth.response; */
 
   try {
     const body = await request.json();
     const { patientName, patientEmail, phone, doctorId, appointmentDate, appointmentTime, reason } = body;
 
-   /* const resolvedPatientName = auth.user.role === "patient" ? auth.user.name : patientName;
-    const resolvedPatientEmail = auth.user.role === "patient" ? auth.user.email : patientEmail;
-      */
-    const resolvedPatientName = patientName;
-    const resolvedPatientEmail = patientEmail;
+   const resolvedPatientName = auth.user.role === "patient" ? auth.user.name : patientName;
+    const resolvedPatientEmail = auth.user.role === "patient" ? auth.user.email : patientEmail; 
+      
+    /*const resolvedPatientName = patientName;
+    const resolvedPatientEmail = patientEmail; */
 
     if (!resolvedPatientName || !resolvedPatientEmail || !phone || !doctorId || !appointmentDate || !appointmentTime || !reason) {
       return NextResponse.json(
