@@ -93,7 +93,7 @@ export default function DoctorsPage() {
                         }
 
                         setSessionUser(datas.user);
-                        setSelectedDoctorId(selectedId);
+                        setSelectedDoctorId(selectedDoctorData?._id || datas.user._id || "" );
                         setEditorSlots(selectedDoctorData?.availability ?? []);
                     }
                 }
@@ -118,7 +118,8 @@ export default function DoctorsPage() {
 }
 
     async function handleAvailabilitySave() {
-        if (!selectedDoctorId || selectedDoctorId.startsWith("demo-")) {
+        console.log("Saving availability for doctor ID:", selectedDoctorId);    
+        if (!selectedDoctorId || editorSlots.length === 0) {
             toast.info("Connect MongoDB to save availability changes.");
             return;
         }
