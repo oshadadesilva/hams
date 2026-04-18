@@ -18,7 +18,10 @@ const doctorSchema = new Schema(
     phone: { type: String, trim: true },
     availability: { type: [availabilitySchema], default: [] },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    _id: false,
+  }
 );
 
 export type DoctorDocument = InferSchemaType<typeof doctorSchema>;

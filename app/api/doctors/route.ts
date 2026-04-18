@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth-guard";
 import { connectDB } from "@/lib/db";
-import { demoDoctors } from "@/lib/demo-data";
 import Doctor from "@/models/Doctor";
 
 function isValidSlot(slot: { day?: string; startTime?: string; endTime?: string }) {
@@ -14,7 +13,10 @@ export async function GET() {
 
     const count = await Doctor.countDocuments();
     if (count === 0) {
-      await Doctor.insertMany(demoDoctors);
+      return NextResponse.json(
+        { success: false, message: "No doctors found." },
+        { status: 404 }
+      );
     }
 
     const doctors = await Doctor.find().sort({ name: 1 }).lean();

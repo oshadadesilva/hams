@@ -6,47 +6,13 @@ export type AvailabilitySlot = {
 };
 
 export type DoctorSeed = {
+  _id: string;
   name: string;
   specialization: string;
   email: string;
   phone: string;
   availability: AvailabilitySlot[];
 };
-
-export const demoDoctors: DoctorSeed[] = [
-  {
-    name: "Dr. Sarah Tan",
-    specialization: "General Medicine",
-    email: "sarah.tan@hams.local",
-    phone: "+65 6000 1111",
-    availability: [
-      { day: "Monday", startTime: "09:00", endTime: "12:00", isAvailable: true },
-      { day: "Wednesday", startTime: "13:00", endTime: "17:00", isAvailable: true },
-      { day: "Friday", startTime: "09:30", endTime: "14:00", isAvailable: true },
-    ],
-  },
-  {
-    name: "Dr. Ahmed Rahman",
-    specialization: "Cardiology",
-    email: "ahmed.rahman@hams.local",
-    phone: "+65 6000 2222",
-    availability: [
-      { day: "Tuesday", startTime: "10:00", endTime: "16:00", isAvailable: true },
-      { day: "Thursday", startTime: "09:00", endTime: "12:30", isAvailable: true },
-    ],
-  },
-  {
-    name: "Dr. Mei Wong",
-    specialization: "Dermatology",
-    email: "mei.wong@hams.local",
-    phone: "+65 6000 3333",
-    availability: [
-      { day: "Monday", startTime: "14:00", endTime: "18:00", isAvailable: true },
-      { day: "Thursday", startTime: "13:00", endTime: "17:00", isAvailable: true },
-      { day: "Saturday", startTime: "09:00", endTime: "12:00", isAvailable: true },
-    ],
-  },
-];
 
 export function getDayName(dateInput: string) {
   const date = new Date(dateInput);

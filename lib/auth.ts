@@ -13,6 +13,16 @@ export type SessionUser = {
   role: UserRole;
 };
 
+export type AppointmentRecord = {
+  _id: string;
+  patientName: string;
+  doctorName: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  status: string;
+};
+
+
 type TokenPayload = SessionUser & {
   exp: number;
 };
