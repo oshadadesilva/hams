@@ -72,7 +72,7 @@ export default function Home() {
         {/* Carousel Section */}
         <div className="mt-12">
           <h2 className="text-2xl font-semibold text-center text-slate-800 mb-8">How HAMS works</h2>
-          <div className="relative max-w-4xl mx-auto">
+          <div className="relative w-full">
             <div className="overflow-hidden rounded-3xl shadow-2xl">
               <div
                 className="flex transition-transform duration-700 ease-out"

@@ -152,7 +152,7 @@ export default function AppointmentsPage() {
               <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Appointment Booking</h1>
             </div>
             <Link href="/" className="text-sm font-semibold text-slate-600 hover:text-teal-700">
-              Back to dashboard
+              Back to Home
             </Link>
           </div>
           <p className="max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
@@ -275,33 +275,9 @@ export default function AppointmentsPage() {
           </form>
 
           <aside className="grid gap-6">
-            <section className="rounded-4xl border border-(--line) bg-(--panel) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)] sm:p-8">
-              <p className="text-sm font-medium uppercase tracking-[0.28em] text-amber-600">Booking Logic</p>
-              <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
-                <li>The form only shows slots that match the selected doctor&apos;s weekly schedule.</li>
-                <li>The backend validates the doctor, the requested date, and the time slot before saving.</li>
-                <li>Duplicate bookings for the same doctor, date, and time are rejected.</li>
-              </ul>
-            </section>
+            
 
-            <section className="rounded-4xl border border-(--line) bg-(--panel) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)] sm:p-8">
-              <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">Recent Appointments</p>
-              <div className="mt-4 space-y-3">
-                {appointments.length > 0 ? (
-                  appointments.slice(0, 5).map((appointment) => (
-                    <article key={appointment._id} className="rounded-3xl border border-slate-200 bg-white px-4 py-3">
-                      <p className="font-semibold text-slate-900">{appointment.patientName}</p>
-                      <p className="text-sm text-slate-600">{appointment.doctorName}</p>
-                      <p className="text-sm text-slate-500">
-                        {appointment.appointmentDate} at {appointment.appointmentTime} - {appointment.status}
-                      </p>
-                    </article>
-                  ))
-                ) : (
-                  <p className="text-sm text-slate-500">No appointments saved yet.</p>
-                )}
-              </div>
-            </section>
+            
           </aside>
         </section>
       </div>
