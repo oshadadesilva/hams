@@ -58,13 +58,13 @@ export default function DoctorDashboard() {
             toast.error("Failed to load doctors.");
           }
 
-          const responseAppointments = await fetch("/api/Appointments", { cache: "no-store" });
-          const dataAppointments = await response.json();
+          const responseAppointments = await fetch("/api/appointments", { cache: "no-store" });
+          const dataAppointments = await responseAppointments.json();
 
           if (responseAppointments.ok && dataAppointments.success) {
-            const appointmentsList = data.Appointments as AppointmentRecord[];
+            const appointmentsList = dataAppointments.appointments as AppointmentRecord[];
             console.log(appointmentsList);
-            //const appointmentsList = data.Appointments.find((doc: AppointmentRecord) => doc.doctorName === datas.user.name);
+            //const appointmentsList = dataAppointments.appointments.find((doc: AppointmentRecord) => doc.doctorName === datas.user.name);
             setAppointments(appointmentsList);
           }
         }

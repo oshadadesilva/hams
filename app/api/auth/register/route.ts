@@ -3,21 +3,21 @@ import { AUTH_COOKIE_NAME, createToken, hashPassword, type UserRole } from "@/li
 import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 
-const allowedRoles: UserRole[] = ["admin", "patient", "doctor"];
+const allowedRoles: Set<UserRole> = new Set(["admin", "patient", "doctor"]);
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, password, role } = body;
+    const { name, email, password, phone, role } = body;
 
-    if (!name || !email || !password || !role) {
+    if (!name || !email || !password || !phone || !role) {
       return NextResponse.json(
-        { success: false, message: "Name, email, password, and role are required." },
+        { success: false, message: "Name, email, password, phone, and role are required." },
         { status: 400 }
       );
     }
 
-    if (!allowedRoles.includes(role)) {
+    if (!allowedRoles.has(role)) {
       return NextResponse.json({ success: false, message: "Invalid role selected." }, { status: 400 });
     }
 
@@ -43,6 +43,7 @@ export async function POST(request: Request) {
       name,
       email: normalizedEmail,
       passwordHash: hashPassword(password),
+      phone,
       role,
     });
 
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
       userId: user._id.toString(),
       name: user.name,
       email: user.email,
+      phone: user.phone,
       role: user.role,
     });
 
@@ -60,6 +62,7 @@ export async function POST(request: Request) {
           id: user._id.toString(),
           name: user.name,
           email: user.email,
+          phone: user.phone,
           role: user.role,
         },
       },

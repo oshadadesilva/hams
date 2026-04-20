@@ -1,5 +1,8 @@
 ﻿"use client";
 
+import { CircleX, CircleCheck } from 'lucide-react';
+
+
 import {
   createContext,
   useCallback,
@@ -31,20 +34,20 @@ function getToastStyles(variant: ToastVariant) {
   if (variant === "error") {
     return "border-rose-200 bg-rose-50 text-rose-900";
   }
-
   return "border-sky-200 bg-sky-50 text-sky-900";
 }
 
-export function ToastProvider({ children }: { children: ReactNode }) {
+export function ToastProvider({ children }: { readonly children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const showToast = useCallback((title: string, variant: ToastVariant = "info") => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
     setToasts((current) => [...current, { id, title, variant }]);
 
-    window.setTimeout(() => {
+    globalThis.setTimeout(() => {
       setToasts((current) => current.filter((toast) => toast.id !== id));
     }, 3200);
+
   }, []);
 
   const value = useMemo(() => ({ showToast }), [showToast]);
@@ -56,19 +59,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto rounded-3xl border px-4 py-3 shadow-[0_14px_35px_rgba(18,52,59,0.12)] backdrop-blur ${getToastStyles(toast.variant)}`}
-          >
+            className={`pointer-events-auto rounded-3xl border px-4 py-3 shadow-[0_14px_35px_rgba(18,52,59,0.12)] backdrop-blur ${getToastStyles(toast.variant)}`}>
             <div className="flex items-start justify-between gap-3">
               <p className="text-sm font-medium leading-6">{toast.title}</p>
-              <button
+              {/* <button
                 type="button"
                 onClick={() => {
                   setToasts((current) => current.filter((item) => item.id !== toast.id));
                 }}
-                className="text-xs font-semibold uppercase tracking-[0.2em] opacity-70 transition hover:opacity-100"
-              >
-                Close
-              </button>
+                className="text-xs font-semibold uppercase tracking-[0.2em] opacity-70 transition hover:opacity-100">
+                                X</button> */}
+              <CircleX type='button' onClick={() => {
+                setToasts((current) => current.filter((item) => item.id !== toast.id));
+              }}
+                className="text-xs font-semibold uppercase tracking-[0.2em] opacity-70 transition duration-1000 ease-in-out 1s hover:opacity-100"></CircleX>
             </div>
           </div>
         ))}

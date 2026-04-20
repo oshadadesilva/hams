@@ -34,7 +34,7 @@ export default function Home() {
   const goToSlide = (index: number) => setCurrentSlide(index);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-teal-50">
+    <main className="min-h-screen bg-linear-to-br from-white via-slate-50 to-teal-50">
       <div className="max-w-6xl mx-auto px-6 py-12 lg:py-16">
         {/* Hero section */}
         <div className="text-center mb-16">
@@ -53,7 +53,7 @@ export default function Home() {
           {/* Beautiful Make an Appointment button */}
           <div className="mt-10">
             <Link
-              href="/appointments"
+              href="/search"
               className="group relative inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-teal-600 rounded-full shadow-lg hover:bg-teal-700 transition-all duration-300 hover:scale-105 hover:shadow-xl"
             >
               <span>📋 Make an Appointment</span>
@@ -72,14 +72,12 @@ export default function Home() {
         {/* Carousel Section */}
         <div className="mt-12">
           <h2 className="text-2xl font-semibold text-center text-slate-800 mb-8">How HAMS works</h2>
-          <div className="relative w-full">
+          <div className="relative max-w-4xl mx-auto">
             <div className="overflow-hidden rounded-3xl shadow-2xl">
-              <div
-                className="flex transition-transform duration-700 ease-out"
-                style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-              >
+              <div className="flex transition-transform duration-700 ease-out"
+                style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
                 {carouselSlides.map((slide, idx) => (
-                  <div key={idx} className={`w-full flex-shrink-0 p-10 md:p-16 text-center ${slide.bgColor}`}>
+                  <div key={idx} className={`w-full shrink-0 p-10 md:p-16 text-center ${slide.bgColor}`}>
                     <div className="text-6xl mb-4">{slide.title.split(" ")[0]}</div>
                     <h3 className="text-2xl md:text-3xl font-bold text-slate-800 mb-3">{slide.title}</h3>
                     <p className="text-slate-600 text-lg max-w-md mx-auto">{slide.description}</p>
@@ -93,12 +91,11 @@ export default function Home() {
 
             <div className="flex justify-center gap-3 mt-6">
               {carouselSlides.map((_, idx) => (
-                <button
+                <button title="go to slide"
                   key={idx}
                   onClick={() => goToSlide(idx)}
-                  className={`h-2.5 rounded-full transition-all ${
-                    currentSlide === idx ? "w-8 bg-teal-600" : "w-2.5 bg-slate-300 hover:bg-slate-400"
-                  }`}
+                  className={`h-2.5 rounded-full transition-all ${currentSlide === idx ? "w-8 bg-teal-600" : "w-2.5 bg-slate-300 hover:bg-slate-400"
+                    }`}
                 />
               ))}
             </div>
