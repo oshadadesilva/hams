@@ -2,7 +2,7 @@ import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypt
 import type { NextRequest } from "next/server";
 
 export const AUTH_COOKIE_NAME = "hams_auth";
-export const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7;
+export const SESSION_DURATION_SECONDS = 60 * 60 * 24;// * 7;
 
 export type UserRole = "admin" | "patient" | "doctor";
 
@@ -10,6 +10,7 @@ export type SessionUser = {
   userId: string;
   name: string;
   email: string;
+  phone: string;
   role: UserRole;
 };
 
@@ -115,6 +116,7 @@ export function verifyToken(token: string): SessionUser | null {
       userId: parsedPayload.userId,
       name: parsedPayload.name,
       email: parsedPayload.email,
+      phone: parsedPayload.phone,
       role: parsedPayload.role,
     };
   } catch {

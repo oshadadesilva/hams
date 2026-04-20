@@ -19,8 +19,7 @@ const doctorSchema = new Schema(
     availability: { type: [availabilitySchema], default: [] },
   },
   {
-    timestamps: true,
-    _id: false,
+    timestamps: true
   }
 );
 

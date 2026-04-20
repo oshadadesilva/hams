@@ -1,116 +1,120 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useEffect } from "react";
 
-const highlights = [
+const carouselSlides = [
   {
-    title: "Appointment Booking",
-    text: "Patients can choose doctors, pick open slots, and receive immediate booking confirmation.",
+    title: "📅 Book an Appointment",
+    description: "Choose a doctor, pick an available time slot, and confirm instantly.",
+    bgColor: "bg-gradient-to-br from-teal-50 to-teal-100",
   },
   {
-    title: "Doctor Availability",
-    text: "Doctors and admins can define weekly schedules that feed directly into patient booking.",
+    title: "👨‍⚕️ Manage Doctor Schedules",
+    description: "Doctors can set weekly availability that feeds directly into booking.",
+    bgColor: "bg-gradient-to-br from-amber-50 to-amber-100",
   },
   {
-    title: "Security & Performance",
-    text: "MongoDB connection reuse, server-side validation, and duplicate-booking checks are built into the starter.",
-  },
-];
-
-const flowCards = [
-  {
-    label: "Flow 1",
-    title: "Patient Appointment Booking",
-    steps: "Select a doctor, choose an available day and slot, submit patient details, and store the booking in MongoDB.",
-  },
-  {
-    label: "Flow 2",
-    title: "Doctor Schedule Management",
-    steps: "Create doctor profiles, maintain weekly availability, and publish slots to the patient booking experience.",
+    title: "✅ Instant Confirmation",
+    description: "Receive email/SMS confirmations – no double bookings, ever.",
+    bgColor: "bg-gradient-to-br from-blue-50 to-blue-100",
   },
 ];
 
 export default function Home() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % carouselSlides.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const goToSlide = (index: number) => setCurrentSlide(index);
+
   return (
-    <main className="min-h-screen px-6 py-8 text-slate-900 sm:px-10 lg:px-16">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8">
-        <header className="rounded-4xl border border-(--line) bg-(--panel) px-6 py-5 shadow-[0_18px_55px_rgba(18,52,59,0.08)] backdrop-blur sm:px-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-sm font-medium uppercase tracking-[0.32em] text-teal-700">
-                Healthcare Appointment Management System
-              </p>
-              <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-                HAMS turns appointment booking and doctor scheduling into one connected workflow.
-              </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-                Built with Next.js, Node.js route handlers, MongoDB, and Mongoose, this starter gives you the
-                required frontend, backend logic, and database integration in one place.
-              </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:w-88 lg:grid-cols-1">
-              <Link
-                href="/appointments"
-                className="rounded-full bg-teal-700 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-teal-800"
-              >
-                Open Booking Flow
-              </Link>
-              <Link
-                href="/doctors"
-                className="rounded-full border border-slate-300 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-800 transition hover:border-teal-700 hover:text-teal-700"
-              >
-                Manage Doctor Schedules
-              </Link>
-            </div>
-          </div>
-        </header>
+    <main className="min-h-screen bg-linear-to-br from-white via-slate-50 to-teal-50">
+      <div className="max-w-6xl mx-auto px-6 py-12 lg:py-16">
+        {/* Hero section */}
+        <div className="text-center mb-16">
+          <p className="text-sm font-medium uppercase tracking-[0.32em] text-teal-600">
+            Healthcare Appointment Management System
+          </p>
+          <h1 className="mt-4 text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900">
+            HAMS turns appointment booking and doctor scheduling <br className="hidden md:block" />
+            into one connected workflow.
+          </h1>
+          <p className="mt-6 text-lg text-slate-600 max-w-2xl mx-auto">
+            Built with Next.js, Node.js route handlers, MongoDB, and Mongoose – this starter gives you the
+            frontend, backend logic, and database integration in one place.
+          </p>
 
-        <section className="grid gap-4 md:grid-cols-3">
-          {highlights.map((item) => (
-            <article
-              key={item.title}
-              className="rounded-[1.75rem] border border-(--line) bg-(--panel) p-6 shadow-[0_12px_40px_rgba(18,52,59,0.06)]"
+          {/* Beautiful Make an Appointment button */}
+          <div className="mt-10">
+            <Link
+              href="/appointments"
+              className="group relative inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-teal-600 rounded-full shadow-lg hover:bg-teal-700 transition-all duration-300 hover:scale-105 hover:shadow-xl"
             >
-              <h2 className="text-xl font-semibold text-slate-900">{item.title}</h2>
-              <p className="mt-3 text-sm leading-7 text-slate-600">{item.text}</p>
-            </article>
-          ))}
-        </section>
+              <span>📋 Make an Appointment</span>
+              <svg
+                className="w-5 h-5 transition-transform group-hover:translate-x-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </Link>
+          </div>
+        </div>
 
-        <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <article className="rounded-4xl border border-(--line) bg-(--panel-strong) p-8 shadow-[0_16px_48px_rgba(18,52,59,0.07)]">
-            <p className="text-sm font-medium uppercase tracking-[0.28em] text-amber-600">Delivery Scope</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">Two complete healthcare flows</h2>
-            <div className="mt-6 grid gap-4">
-              {flowCards.map((card) => (
-                <div key={card.title} className="rounded-3xl border border-(--line) bg-white/80 p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700">{card.label}</p>
-                  <h3 className="mt-2 text-xl font-semibold text-slate-900">{card.title}</h3>
-                  <p className="mt-2 text-sm leading-7 text-slate-600">{card.steps}</p>
-                </div>
+        {/* Carousel Section */}
+        <div className="mt-12">
+          <h2 className="text-2xl font-semibold text-center text-slate-800 mb-8">How HAMS works</h2>
+          <div className="relative max-w-4xl mx-auto">
+            <div className="overflow-hidden rounded-3xl shadow-2xl">
+              <div className="flex transition-transform duration-700 ease-out"
+                style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
+                {carouselSlides.map((slide, idx) => (
+                  <div key={idx} className={`w-full shrink-0 p-10 md:p-16 text-center ${slide.bgColor}`}>
+                    <div className="text-6xl mb-4">{slide.title.split(" ")[0]}</div>
+                    <h3 className="text-2xl md:text-3xl font-bold text-slate-800 mb-3">{slide.title}</h3>
+                    <p className="text-slate-600 text-lg max-w-md mx-auto">{slide.description}</p>
+                    <div className="mt-8 h-48 md:h-64 bg-white/50 rounded-2xl flex items-center justify-center text-slate-400 border-2 border-dashed border-teal-200">
+                      🖼️ Screenshot / Illustration
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-center gap-3 mt-6">
+              {carouselSlides.map((_, idx) => (
+                <button title="go to slide"
+                  key={idx}
+                  onClick={() => goToSlide(idx)}
+                  className={`h-2.5 rounded-full transition-all ${currentSlide === idx ? "w-8 bg-teal-600" : "w-2.5 bg-slate-300 hover:bg-slate-400"
+                    }`}
+                />
               ))}
             </div>
-          </article>
 
-          <article className="rounded-4xl border border-(--line) bg-(--panel) p-8 shadow-[0_16px_48px_rgba(18,52,59,0.07)]">
-            <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">Architecture Snapshot</p>
-            <ul className="mt-5 space-y-4 text-sm leading-7 text-slate-700">
-              <li>
-                <span className="font-semibold text-slate-900">Frontend:</span> React components in the Next.js App Router.
-              </li>
-              <li>
-                <span className="font-semibold text-slate-900">Backend:</span> Route handlers under `app/api/*` for doctors,
-                availability, and appointments.
-              </li>
-              <li>
-                <span className="font-semibold text-slate-900">Database:</span> MongoDB with Mongoose models and connection reuse.
-              </li>
-              <li>
-                <span className="font-semibold text-slate-900">Safety checks:</span> Required-field validation, schedule validation,
-                and double-booking prevention.
-              </li>
-            </ul>
-          </article>
-        </section>
+            <button
+              onClick={() => goToSlide((currentSlide - 1 + carouselSlides.length) % carouselSlides.length)}
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-md hover:bg-white transition"
+            >
+              ❮
+            </button>
+            <button
+              onClick={() => goToSlide((currentSlide + 1) % carouselSlides.length)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-md hover:bg-white transition"
+            >
+              ❯
+            </button>
+          </div>
+        </div>
       </div>
     </main>
   );
-}
+} 

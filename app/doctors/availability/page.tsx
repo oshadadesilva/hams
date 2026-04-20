@@ -33,40 +33,40 @@ export default function DoctorsPage() {
     const [editorSlots, setEditorSlots] = useState<AvailabilitySlot[]>([]);
     const [isSavingAvailability, setIsSavingAvailability] = useState(false);
 
-    // useEffect(() => {
-    //     const loadSessionUser = async () => {
+    // useeffect(() => {
+    //     const loadsessionuser = async () => {
     //         try {
     //             const response = await fetch("/api/auth/me", { cache: "no-store" });
     //             const data = await response.json();
     //             if (response.ok && data.success) {
     //                 if (data.user?.role === "doctor") {
     //                     console.log(data.user);
-    //                     // const doctor = data.user as DoctorSeed[];
+    //                     // const doctor = data.user as doctorseed[];
     //                     // if (doctor) {
     //                     //     console.log(doctor);
-    //                     //     setSelectedDoctorId(doctor[0]?._id ?? "");
-    //                     //     setEditorSlots(doctor[0].availability ?? []);
+    //                     //     setselecteddoctorid(doctor[0]?._id ?? "");
+    //                     //     seteditorslots(doctor[0].availability ?? []);
 
-    //                     //     setDoctors(doctor);
-    //                     //     //setEditorSlots(doctor[0].availability ?? []);
+    //                     //     setdoctors(doctor);
+    //                     //     //seteditorslots(doctor[0].availability ?? []);
     //                     //     return;
     //                     // }
-    //                     setSessionUser(data.user);
+    //                     setsessionuser(data.user);
     //                 } else {
-    //                     setSessionUser(null);
+    //                     setsessionuser(null);
     //                 }
     //             }
     //         } catch (error) {
     //             console.error(error);
-    //             setSessionUser(null);
+    //             setsessionuser(null);
     //         }
     //     };
-    //     void loadSessionUser();
+    //     void loadsessionuser();
 
     // }, []);
 
     useEffect(() => {
-        const loadDoctorsAndSetup = async () => {
+        const loadDoctors = async () => {
             try {
                 // Load session user
                 const responses = await fetch("/api/auth/me", { cache: "no-store" });
@@ -81,20 +81,19 @@ export default function DoctorsPage() {
                         const doctorsList = data.doctors;
                         setDoctors(doctorsList);
 
-                        let selectedId = "";
+                        //let selectedId = "";
                         let selectedDoctorData: DoctorSeed | undefined;
 
                         if (datas.user.email) {
-                            selectedId = datas.user._id;
                             selectedDoctorData = doctorsList.find((doc: DoctorSeed) => doc.email === datas.user.email);
                         } else if (doctorsList.length > 0) {
-                            selectedId = doctorsList[0]._id;
                             selectedDoctorData = doctorsList[0];
                         }
 
                         setSessionUser(datas.user);
-                        setSelectedDoctorId(selectedId);
-                        setEditorSlots(selectedDoctorData?.availability ?? []);
+                        setSelectedDoctorId(datas.user._id);
+                        setSelectedDoctorId(selectedDoctorData?._id || datas.user._id || "");
+                        setEditorSlots(selectedDoctorData?.availability || []);
                     }
                 }
 
@@ -102,7 +101,7 @@ export default function DoctorsPage() {
                 console.error(error);
             }
         };
-        void loadDoctorsAndSetup();
+        void loadDoctors();
     }, []);
 
     function updateEditorSlot(index: number, key: keyof AvailabilitySlot, value: string | boolean) {
@@ -113,8 +112,14 @@ export default function DoctorsPage() {
         );
     }
 
+
+    function deleteSlot(index: number) {
+        setEditorSlots((current) => current.filter((_, i) => i !== index));
+    }
+
     async function handleAvailabilitySave() {
-        if (!selectedDoctorId || selectedDoctorId.startsWith("demo-")) {
+        console.log("Saving availability for doctor ID:", selectedDoctorId);
+        if (!selectedDoctorId || editorSlots.length === 0) {
             toast.info("Connect MongoDB to save availability changes.");
             return;
         }
@@ -178,7 +183,7 @@ export default function DoctorsPage() {
                             <div className="mt-5 space-y-4">
                                 {editorSlots.length > 0 ? (
                                     editorSlots.map((slot, index) => (
-                                        <div key={`${slot.day}-${index}`} className="grid gap-3 rounded-3xl border border-slate-200 bg-white p-4 md:grid-cols-4">
+                                        <div key={`${slot.day}-${index}`} className="grid gap-3 rounded-3xl border border-slate-200 bg-white p-4 md:grid-cols-5">
                                             <select
                                                 title="SlotDay"
                                                 value={slot.day}
@@ -207,8 +212,16 @@ export default function DoctorsPage() {
                                                     type="checkbox"
                                                     checked={slot.isAvailable}
                                                     onChange={(event) => updateEditorSlot(index, "isAvailable", event.target.checked)} />
-                                                Available
+                                                {slot.isAvailable ? "Available" : "Unavailable"}
                                             </label>
+                                            {/* Delete button column */}
+                                            <button
+                                                type="button"
+                                                onClick={() => deleteSlot(index)}
+                                                className="rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100"
+                                            >
+                                                Delete
+                                            </button>
                                         </div>
                                     ))
                                 ) : (

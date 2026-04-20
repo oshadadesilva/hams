@@ -16,6 +16,7 @@ export default function SignInPage() {
   const toast = useToast();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState<Role>("patient");
@@ -40,7 +41,7 @@ export default function SignInPage() {
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify({ name, email, phone, password, role }),
       });
 
       const data = await response.json();
@@ -91,6 +92,17 @@ export default function SignInPage() {
                 onChange={(event) => setEmail(event.target.value)}
                 className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700"
                 placeholder="name@hospital.com"
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-medium text-slate-700">
+              Phone number
+              <input
+                required
+                type="tel"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700"
+                placeholder="e.g. +1234567890"
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">

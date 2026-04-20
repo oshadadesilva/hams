@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
 import { generateHalfHourSlots, getDayName, type DoctorSeed } from "@/lib/demo-data";
+import { AppointmentRecord } from "@/lib/auth";
 
 type AvailabilitySlot = DoctorSeed["availability"][number];
 
@@ -11,14 +12,14 @@ type DoctorRecord = DoctorSeed & {
   _id: string;
 };
 
-type AppointmentRecord = {
-  _id: string;
-  patientName: string;
-  doctorName: string;
-  appointmentDate: string;
-  appointmentTime: string;
-  status: string;
-};
+// type AppointmentRecord = {
+//   _id: string;
+//   patientName: string;
+//   doctorName: string;
+//   appointmentDate: string;
+//   appointmentTime: string;
+//   status: string;
+// };
 
 const today = new Date().toISOString().split("T")[0];
 
@@ -31,7 +32,7 @@ export default function AppointmentsPage() {
   const [appointmentTime, setAppointmentTime] = useState("");
   const [patientName, setPatientName] = useState("");
   const [patientEmail, setPatientEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [patientPhone, setPatientPhone] = useState("");
   const [reason, setReason] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -54,11 +55,29 @@ export default function AppointmentsPage() {
 
     const loadAppointments = async () => {
       try {
-        const response = await fetch("/api/appointments");
-        const data = await response.json();
-        if (response.ok && data.success) {
-          setAppointments(data.appointments);
+        const responsesAuth = await fetch("/api/auth/me", { cache: "no-store" });
+        const dataAuth = await responsesAuth.json();
+
+        if (responsesAuth.ok && dataAuth.success && dataAuth.user?.role === "patient") {
+
+          console.log("User data from /api/auth/me:", dataAuth.user);
+          setPatientName(dataAuth.user.name);
+          setPatientEmail(dataAuth.user.email);
+          setPatientPhone(dataAuth.user.phone ?? "");
+
+          const response = await fetch("/api/appointments", { cache: "no-store" });
+          const data = await response.json();
+          if (response.ok && data.success) {
+            setAppointments(data.appointments);
+          }
         }
+
+
+        // const response = await fetch("/api/appointments");
+        // const data = await response.json();
+        // if (response.ok && data.success) {
+        //   setAppointments(data.appointments);
+        // }
       } catch (error) {
         console.error(error);
         toast.error("Failed to load appointments. Check your MongoDB connection and try again.");
@@ -107,13 +126,22 @@ export default function AppointmentsPage() {
     setIsSaving(true);
 
     try {
+      console.log("Submitting appointment with data:", JSON.stringify({
+        patientName,
+        patientEmail,
+        patientPhone,
+        doctorId: selectedDoctorId,
+        appointmentDate,
+        appointmentTime,
+        reason,
+      }));
       const response = await fetch("/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           patientName,
           patientEmail,
-          phone,
+          phone: patientPhone,
           doctorId: selectedDoctorId,
           appointmentDate,
           appointmentTime,
@@ -132,7 +160,7 @@ export default function AppointmentsPage() {
       toast.success("Appointment booked successfully.");
       setPatientName("");
       setPatientEmail("");
-      setPhone("");
+      setPatientPhone("");
       setReason("");
     } catch (error) {
       console.error(error);
@@ -145,7 +173,8 @@ export default function AppointmentsPage() {
   return (
     <main className="min-h-screen px-6 py-8 sm:px-10 lg:px-16">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <header className="flex flex-col gap-4 rounded-4xl border border-(--line) bg-(--panel) px-6 py-6 shadow-[0_16px_48px_rgba(18,52,59,0.08)] sm:px-8">
+
+        <section className="flex flex-col gap-4 rounded-4xl border border-(--line) bg-(--panel) px-6 py-6 shadow-[0_16px_48px_rgba(18,52,59,0.08)] sm:px-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">Patient Flow</p>
@@ -155,16 +184,9 @@ export default function AppointmentsPage() {
               Back to dashboard
             </Link>
           </div>
-          <p className="max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
-            This page demonstrates the full booking flow: choose a doctor, load valid schedule slots, submit patient
-            details, and save the appointment through the Next.js backend into MongoDB.
-          </p>
-        </header>
-
-        <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <form
             onSubmit={handleSubmit}
-            className="rounded-4xl border border-(--line) bg-(--panel-strong) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)] sm:p-8"
+            className="sm:p-8"
           >
             <div className="grid gap-5 md:grid-cols-2">
               <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -191,11 +213,12 @@ export default function AppointmentsPage() {
               <label className="grid gap-2 text-sm font-medium text-slate-700">
                 Phone number
                 <input
+                  type="tel"
                   required
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
+                  value={patientPhone}
+                  onChange={(event) => setPatientPhone(event.target.value)}
                   className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700"
-                  placeholder="+65 8123 4567"
+                  placeholder="(+65) 8123 4567"
                 />
               </label>
               <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -204,8 +227,7 @@ export default function AppointmentsPage() {
                   required
                   value={selectedDoctorId}
                   onChange={(event) => setSelectedDoctorId(event.target.value)}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700"
-                >
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700">
                   {doctors.map((doctor) => (
                     <option key={doctor._id} value={doctor._id}>
                       {doctor.name} - {doctor.specialization}
@@ -230,8 +252,7 @@ export default function AppointmentsPage() {
                   required
                   value={appointmentTime}
                   onChange={(event) => setAppointmentTime(event.target.value)}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700"
-                >
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700">
                   {availableSlots.length > 0 ? (
                     availableSlots.map((slot) => (
                       <option key={slot} value={slot}>
@@ -251,8 +272,7 @@ export default function AppointmentsPage() {
                   value={reason}
                   onChange={(event) => setReason(event.target.value)}
                   className="rounded-3xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700"
-                  placeholder="Describe the consultation reason"
-                />
+                  placeholder="Describe the consultation reason" />
               </label>
             </div>
 
@@ -262,19 +282,18 @@ export default function AppointmentsPage() {
               </div>
               <button
                 type="submit"
-                disabled={isSaving || availableSlots.length === 0 || selectedDoctorId.startsWith("demo-")}
-                className="rounded-full bg-teal-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-              >
+                disabled={isSaving || availableSlots.length === 0}
+                className="rounded-full bg-teal-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400">
                 {isSaving ? "Booking..." : "Book appointment"}
               </button>
             </div>
 
-            {selectedDoctorId.startsWith("demo-") ? (
+            {/* {selectedDoctorId.startsWith("demo-") ? (
               <p className="mt-4 text-sm text-amber-700">Connect MongoDB and use real doctor records to enable live bookings.</p>
-            ) : null}
+            ) : null} */}
           </form>
 
-          <aside className="grid gap-6">
+          {/* <aside className="grid gap-6">
             <section className="rounded-4xl border border-(--line) bg-(--panel) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)] sm:p-8">
               <p className="text-sm font-medium uppercase tracking-[0.28em] text-amber-600">Booking Logic</p>
               <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
@@ -302,7 +321,7 @@ export default function AppointmentsPage() {
                 )}
               </div>
             </section>
-          </aside>
+          </aside> */}
         </section>
       </div>
     </main>
