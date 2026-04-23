@@ -16,11 +16,18 @@ export type SessionUser = {
 
 export type AppointmentRecord = {
   _id: string;
+  doctorId: string;
   patientName: string;
+  patientEmail: string;
+  phone: string;
   doctorName: string;
+  hospitalName: string;
   appointmentDate: string;
   appointmentTime: string;
+  reason?: string;
   status: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 

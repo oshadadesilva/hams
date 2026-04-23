@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { AUTH_COOKIE_NAME, createToken, verifyPassword } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
+import { serializeUserProfile, toSessionUser } from "@/lib/user-profile";
 import User from "@/models/User";
 
 export async function POST(request: Request) {
@@ -27,23 +28,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const token = createToken({
-      userId: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-    });
+    const token = createToken(toSessionUser(user));
 
     const response = NextResponse.json({
       success: true,
-      user: {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-      },
+      user: serializeUserProfile(user),
     });
 
     response.cookies.set({

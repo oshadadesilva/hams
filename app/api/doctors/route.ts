@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth-guard";
 import { connectDB } from "@/lib/db";
+import { normalizeHospitals, type DoctorHospitalLike } from "@/lib/doctor-schedule";
 import Doctor from "@/models/Doctor";
-
-function isValidSlot(slot: { day?: string; startTime?: string; endTime?: string }) {
-  return Boolean(slot.day && slot.startTime && slot.endTime && slot.startTime < slot.endTime);
-}
 
 export async function GET() {
   try {
@@ -38,7 +35,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, specialization, email, phone, availability = [] } = body;
+    const { name, specialization, email, phone, hospitals = [], availability = [] } = body;
 
     if (!name || !specialization || !email) {
       return NextResponse.json(
@@ -47,9 +44,14 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!Array.isArray(availability) || availability.some((slot) => !isValidSlot(slot))) {
+    const normalizedHospitals = normalizeHospitals(
+      Array.isArray(hospitals) ? (hospitals as DoctorHospitalLike[]) : [],
+      Array.isArray(availability) ? availability : []
+    );
+
+    if (normalizedHospitals.some((hospital) => hospital.availability.length === 0)) {
       return NextResponse.json(
-        { success: false, message: "Availability must contain valid day and time ranges." },
+        { success: false, message: "Hospital schedules must contain valid day and time ranges." },
         { status: 400 }
       );
     }
@@ -69,7 +71,7 @@ export async function POST(request: Request) {
       specialization,
       email,
       phone,
-      availability,
+      hospitals: normalizedHospitals,
     });
 
     return NextResponse.json({ success: true, doctor }, { status: 201 });

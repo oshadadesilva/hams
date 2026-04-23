@@ -2,10 +2,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
-import { type AvailabilitySlot, type DoctorSeed } from "@/lib/demo-data";
+import { type DoctorSeed } from "@/lib/demo-data";
 import { SessionUser, AppointmentRecord } from "@/lib/auth";
+import { flattenHospitalAvailability } from "@/lib/doctor-schedule";
 
 
 // Dummy data – no API calls, no errors
@@ -23,11 +25,14 @@ const recentPatients = [
 ];
 
 export default function DoctorDashboard() {
+  const router = useRouter();
   const toast = useToast();
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [selectedDoctorId, setSelectedDoctorId] = useState("");
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
-  const [editorSlots, setEditorSlots] = useState<AvailabilitySlot[]>([]);
+  const [editorSlots, setEditorSlots] = useState<ReturnType<typeof flattenHospitalAvailability>>([]);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadDoctors = async () => {
@@ -35,24 +40,45 @@ export default function DoctorDashboard() {
         const responses = await fetch("/api/auth/me", { cache: "no-store" });
         const datas = await responses.json();
 
-        if (responses.ok && datas.success && datas.user?.role === "doctor") {
-          // console.log(datas.user);
-          // console.log(datas.user.userId);
+        if (responses.status === 401) {
+          router.push("/login");
+          return;
+        }
 
+        if (!responses.ok || !datas.success) {
+          toast.error(datas.message ?? "Unable to load your account.");
+          router.push("/");
+          return;
+        }
+
+        if (datas.user?.role !== "doctor" && datas.user?.role !== "admin") {
+          toast.error("Only doctors and admins can access the Doctors page.");
+          router.push("/dashboard");
+          return;
+        }
+
+        setIsAuthorized(true);
+
+        if (datas.user?.role === "doctor") {
           const response = await fetch("/api/doctors", { cache: "no-store" });
           const data = await response.json();
 
           if (response.ok && data.success) {
             const doctorsList = data.doctors as DoctorSeed[];
-            //console.log(doctorsList);
 
             const doctorToSelect = doctorsList.find((doc: DoctorSeed) => doc.email === datas.user.email);
             console.log(doctorToSelect);
-            //setDoctors(doctorsList);
 
             setSessionUser(datas.user);
             setSelectedDoctorId(doctorToSelect?._id ?? "");
-            setEditorSlots(doctorToSelect?.availability ?? []);
+            setEditorSlots(flattenHospitalAvailability(doctorToSelect?.hospitals ?? []));
+
+            const responsesAppoint = await fetch("/api/appointments", { cache: "no-store" });
+            const dataAppoint = await responsesAppoint.json();
+
+            console.log("Appointments data:", dataAppoint);
+
+
           }
           else {
             toast.error("Failed to load doctors.");
@@ -68,13 +94,32 @@ export default function DoctorDashboard() {
             setAppointments(appointmentsList);
           }
         }
+        else {
+          setSessionUser(datas.user);
+        }
       } catch (error) {
         console.error(error);
+      } finally {
+        setIsLoading(false);
       }
     };
     void loadDoctors();
 
-  }, [toast]);
+  }, [router, toast]);
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen px-6 py-8 text-slate-900 sm:px-10 lg:px-16">
+        <div className="mx-auto max-w-6xl rounded-4xl border border-(--line) bg-(--panel) p-8 text-sm text-slate-600 shadow-[0_18px_55px_rgba(18,52,59,0.08)]">
+          Loading doctors page...
+        </div>
+      </main>
+    );
+  }
+
+  if (!isAuthorized) {
+    return null;
+  }
 
   return (
     <main className="min-h-screen px-6 py-8 text-slate-900 sm:px-10 lg:px-16">

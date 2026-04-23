@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { AUTH_COOKIE_NAME, createToken, hashPassword, type UserRole } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
+import { serializeUserProfile, toSessionUser } from "@/lib/user-profile";
 import User from "@/models/User";
 
 const allowedRoles: Set<UserRole> = new Set(["admin", "patient", "doctor"]);
@@ -8,7 +9,27 @@ const allowedRoles: Set<UserRole> = new Set(["admin", "patient", "doctor"]);
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, password, phone, role } = body;
+    const {
+      name,
+      email,
+      password,
+      phone,
+      role,
+      title,
+      country,
+      dateOfBirth,
+      gender,
+      nic,
+      address,
+      guardianName,
+      guardianRelation,
+      emergencyContactName,
+      emergencyContactPhone,
+      bloodGroup,
+      allergies,
+      medicalConditions,
+      currentMedications,
+    } = body;
 
     if (!name || !email || !password || !phone || !role) {
       return NextResponse.json(
@@ -45,26 +66,28 @@ export async function POST(request: Request) {
       passwordHash: hashPassword(password),
       phone,
       role,
+      title,
+      country,
+      dateOfBirth,
+      gender,
+      nic,
+      address,
+      guardianName,
+      guardianRelation,
+      emergencyContactName,
+      emergencyContactPhone,
+      bloodGroup,
+      allergies,
+      medicalConditions,
+      currentMedications,
     });
 
-    const token = createToken({
-      userId: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-    });
+    const token = createToken(toSessionUser(user));
 
     const response = NextResponse.json(
       {
         success: true,
-        user: {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-        },
+        user: serializeUserProfile(user),
       },
       { status: 201 }
     );

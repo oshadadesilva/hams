@@ -10,13 +10,21 @@ const availabilitySchema = new Schema(
   { _id: false }
 );
 
+const hospitalSchema = new Schema(
+  {
+    hospitalName: { type: String, required: true, trim: true },
+    availability: { type: [availabilitySchema], default: [] },
+  },
+  { _id: false }
+);
+
 const doctorSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
     specialization: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, trim: true, lowercase: true },
     phone: { type: String, trim: true },
-    availability: { type: [availabilitySchema], default: [] },
+    hospitals: { type: [hospitalSchema], default: [] },
   },
   {
     timestamps: true

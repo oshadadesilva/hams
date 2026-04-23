@@ -1,35 +1,33 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
+import { normalizeHospitals } from "@/lib/doctor-schedule";
 import Doctor from "@/models/Doctor";
 
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { doctorId, availability } = body;
+    const { doctorId, hospitalName, availability, hospitals } = body;
 
-    if (!doctorId || !Array.isArray(availability)) {
+    if (!doctorId) {
       return NextResponse.json(
-        { success: false, message: "Doctor ID and availability are required." },
+        { success: false, message: "Doctor ID is required." },
         { status: 400 }
       );
     }
 
-    const invalidSlot = availability.some(
-      (slot) => !slot.day || !slot.startTime || !slot.endTime || slot.startTime >= slot.endTime
-    );
-
-    if (invalidSlot) {
-      return NextResponse.json(
-        { success: false, message: "Each availability slot must include a valid day, start time, and end time." },
-        { status: 400 }
-      );
-    }
+    const normalizedHospitals = Array.isArray(hospitals)
+      ? normalizeHospitals(hospitals)
+      : normalizeHospitals(
+          hospitalName && Array.isArray(availability)
+            ? [{ hospitalName, availability }]
+            : []
+        );
 
     await connectDB();
 
     const doctor = await Doctor.findByIdAndUpdate(
       doctorId,
-      { availability },
+      { hospitals: normalizedHospitals },
       { new: true, runValidators: true }
     ).lean();
 

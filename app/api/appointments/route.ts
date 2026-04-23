@@ -2,25 +2,9 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { generateHalfHourSlots, getDayName } from "@/lib/demo-data";
 import { requireAuth } from "@/lib/auth-guard";
+import { findHospitalAvailability } from "@/lib/doctor-schedule";
 import Appointment from "@/models/Appointment";
 import Doctor from "@/models/Doctor";
-
-type AvailabilitySlot = {
-  day: string;
-  startTime: string;
-  endTime: string;
-  isAvailable: boolean;
-};
-
-// function addThirtyMinutes(time: string) {
-//   const [hours, minutes] = time.split(":").map(Number);
-//   const total = hours * 60 + minutes + 30;
-//   const nextHours = Math.floor(total / 60)
-//     .toString()
-//     .padStart(2, "0");
-//   const nextMinutes = (total % 60).toString().padStart(2, "0");
-//   return `${nextHours}:${nextMinutes}`;
-// }
 
 export async function GET(request: Request) {
   const auth = requireAuth(request, ["admin", "patient", "doctor"]);
@@ -33,15 +17,15 @@ export async function GET(request: Request) {
 
     let appointments;
     if (auth.user.role === "admin") {
-      appointments = await Appointment.find().sort({ appointmentDate: 1, appointmentTime: 1 }).lean();
+      appointments = await Appointment.find().sort({ hospitalName: 1, appointmentDate: 1, appointmentTime: 1 }).lean();
     } else if (auth.user.role === "patient") {
       appointments = await Appointment.find({ patientEmail: auth.user.email })
-        .sort({ appointmentDate: 1, appointmentTime: 1 })
+        .sort({ hospitalName: 1, appointmentDate: 1, appointmentTime: 1 })
         .lean();
     } else {
       const doctorProfile = await Doctor.findOne({ email: auth.user.email }).lean();
       appointments = doctorProfile
-        ? await Appointment.find({ doctorId: doctorProfile._id }).sort({ appointmentDate: 1, appointmentTime: 1 }).lean()
+        ? await Appointment.find({ doctorId: doctorProfile._id }).sort({ hospitalName: 1, appointmentDate: 1, appointmentTime: 1 }).lean()
         : [];
     }
 
@@ -69,6 +53,7 @@ export async function POST(request: Request) {
       phone,
       patientPhone,
       doctorId,
+      hospitalName,
       appointmentDate,
       appointmentTime,
       reason,
@@ -78,13 +63,14 @@ export async function POST(request: Request) {
     // const resolvedPatientName = auth.user.role === "patient" ? auth.user.name : patientName;
     // const resolvedPatientEmail = auth.user.role === "patient" ? auth.user.email : patientEmail;
 
-    if (!patientName || !patientEmail || !resolvedPhone || !doctorId || !appointmentDate || !appointmentTime || !reason) {
+    if (!patientName || !patientEmail || !resolvedPhone || !doctorId || !hospitalName || !appointmentDate || !appointmentTime || !reason) {
       console.warn(
         "Missing required booking fields",
         patientName,
         patientEmail,
         resolvedPhone,
         doctorId,
+        hospitalName,
         appointmentDate,
         appointmentTime,
         reason
@@ -106,9 +92,9 @@ export async function POST(request: Request) {
     }
 
     const dayName = getDayName(appointmentDate);
-    const availability = (doctor.availability ?? []) as AvailabilitySlot[];
-    const validSchedule = availability.find(
-      (slot: AvailabilitySlot) =>
+    const hospitalSchedule = findHospitalAvailability(doctor.hospitals, hospitalName);
+    const validSchedule = hospitalSchedule?.availability.find(
+      (slot) =>
         slot.day === dayName &&
         slot.isAvailable &&
         generateHalfHourSlots(slot.startTime, slot.endTime).includes(appointmentTime)
@@ -121,10 +107,9 @@ export async function POST(request: Request) {
       );
     }
 
-    //const endTime = addThirtyMinutes(appointmentTime);
-
     const existingAppointment = await Appointment.findOne({
       doctorId,
+      hospitalName,
       appointmentDate,
       appointmentTime,
       status: "booked",
@@ -142,6 +127,7 @@ export async function POST(request: Request) {
       patientEmail: patientEmail,
       phone: resolvedPhone,
       doctorId,
+      hospitalName,
       doctorName: doctor.name,
       appointmentDate,
       appointmentTime,

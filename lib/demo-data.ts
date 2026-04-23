@@ -5,13 +5,18 @@ export type AvailabilitySlot = {
   isAvailable: boolean;
 };
 
+export type DoctorHospital = {
+  hospitalName: string;
+  availability: AvailabilitySlot[];
+};
+
 export type DoctorSeed = {
   _id: string;
   name: string;
   specialization: string;
   email: string;
   phone: string;
-  availability: AvailabilitySlot[];
+  hospitals: DoctorHospital[];
 };
 
 export function getDayName(dateInput: string) {
