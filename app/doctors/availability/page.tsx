@@ -21,6 +21,7 @@ export default function DoctorsPage() {
   const toast = useToast();
   const [selectedDoctorId, setSelectedDoctorId] = useState("");
   const [editorHospitals, setEditorHospitals] = useState<DoctorHospital[]>([]);
+  const [hospitalNameDrafts, setHospitalNameDrafts] = useState<string[]>([]);
   const [isSavingAvailability, setIsSavingAvailability] = useState(false);
 
   useEffect(() => {
@@ -41,6 +42,7 @@ export default function DoctorsPage() {
 
             setSelectedDoctorId(selectedDoctorData?._id ?? "");
             setEditorHospitals(selectedDoctorData?.hospitals ?? []);
+            setHospitalNameDrafts((selectedDoctorData?.hospitals ?? []).map((hospital) => hospital.hospitalName));
           }
         }
       } catch (error) {
@@ -59,6 +61,12 @@ export default function DoctorsPage() {
     );
   }
 
+  function updateHospitalNameDraft(index: number, hospitalName: string) {
+    setHospitalNameDrafts((current) =>
+      current.map((draft, currentIndex) => (currentIndex === index ? hospitalName : draft))
+    );
+  }
+
   function updateEditorSlot(
     hospitalIndex: number,
     slotIndex: number,
@@ -69,11 +77,11 @@ export default function DoctorsPage() {
       current.map((hospital, currentHospitalIndex) =>
         currentHospitalIndex === hospitalIndex
           ? {
-              ...hospital,
-              availability: hospital.availability.map((slot, currentSlotIndex) =>
-                currentSlotIndex === slotIndex ? { ...slot, [key]: value } : slot
-              ),
-            }
+            ...hospital,
+            availability: hospital.availability.map((slot, currentSlotIndex) =>
+              currentSlotIndex === slotIndex ? { ...slot, [key]: value } : slot
+            ),
+          }
           : hospital
       )
     );
@@ -81,6 +89,7 @@ export default function DoctorsPage() {
 
   function addHospital() {
     setEditorHospitals((current) => [...current, { ...emptyHospital, availability: [{ ...emptySlot }] }]);
+    setHospitalNameDrafts((current) => [...current, ""]);
   }
 
   function addSlot(hospitalIndex: number) {
@@ -95,6 +104,7 @@ export default function DoctorsPage() {
 
   function deleteHospital(index: number) {
     setEditorHospitals((current) => current.filter((_, currentIndex) => currentIndex !== index));
+    setHospitalNameDrafts((current) => current.filter((_, currentIndex) => currentIndex !== index));
   }
 
   function deleteSlot(hospitalIndex: number, slotIndex: number) {
@@ -102,9 +112,9 @@ export default function DoctorsPage() {
       current.map((hospital, currentIndex) =>
         currentIndex === hospitalIndex
           ? {
-              ...hospital,
-              availability: hospital.availability.filter((_, currentSlotIndex) => currentSlotIndex !== slotIndex),
-            }
+            ...hospital,
+            availability: hospital.availability.filter((_, currentSlotIndex) => currentSlotIndex !== slotIndex),
+          }
           : hospital
       )
     );
@@ -132,6 +142,7 @@ export default function DoctorsPage() {
       }
 
       setEditorHospitals(data.doctor?.hospitals ?? []);
+      setHospitalNameDrafts((data.doctor?.hospitals ?? []).map((hospital: DoctorHospital) => hospital.hospitalName));
       toast.success("Doctor hospital schedules updated successfully.");
     } catch (error) {
       console.error(error);
@@ -164,8 +175,9 @@ export default function DoctorsPage() {
                       <div className="flex flex-wrap gap-3">
                         <input
                           title="HospitalName"
-                          value={hospital.hospitalName}
-                          onChange={(event) => updateHospitalName(hospitalIndex, event.target.value)}
+                          value={hospitalNameDrafts[hospitalIndex] ?? hospital.hospitalName}
+                          onChange={(event) => updateHospitalNameDraft(hospitalIndex, event.target.value)}
+                          onBlur={(event) => updateHospitalName(hospitalIndex, event.target.value)}
                           className="min-w-64 flex-1 rounded-xl border border-slate-200 px-3 py-2"
                           placeholder="Hospital name"
                         />

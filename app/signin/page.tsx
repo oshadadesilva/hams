@@ -7,10 +7,6 @@ import { useToast } from "@/components/ToastProvider";
 
 type Role = "admin" | "patient" | "doctor";
 
-function getRoleDestination(role: Role) {
-  return role === "admin" ? "admin" : role === "doctor" ? "doctors" : "patient";
-}
-
 export default function SignInPage() {
   const router = useRouter();
   const toast = useToast();
@@ -26,14 +22,14 @@ export default function SignInPage() {
   const [title, setTitle] = useState("Mr.");
   const [nic, setNic] = useState("");
   const [address, setAddress] = useState("");
-  const [guardianName, setGuardianName] = useState("");
-  const [guardianRelation, setGuardianRelation] = useState("");
-  const [emergencyContactName, setEmergencyContactName] = useState("");
-  const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
-  const [bloodGroup, setBloodGroup] = useState("");
-  const [allergies, setAllergies] = useState("");
+  // const [guardianName, setGuardianName] = useState("");
+  // const [guardianRelation, setGuardianRelation] = useState("");
+  // const [emergencyContactName, setEmergencyContactName] = useState("");
+  // const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
+  // const [bloodGroup, setBloodGroup] = useState("");
+  // const [allergies, setAllergies] = useState("");
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (password.length < 6) {
@@ -63,12 +59,12 @@ export default function SignInPage() {
           country,
           nic,
           address,
-          guardianName,
-          guardianRelation,
-          emergencyContactName,
-          emergencyContactPhone,
-          bloodGroup,
-          allergies,
+          // guardianName,
+          // guardianRelation,
+          // emergencyContactName,
+          // emergencyContactPhone,
+          // bloodGroup,
+          // allergies,
         }),
       });
 
@@ -79,11 +75,11 @@ export default function SignInPage() {
       }
 
       toast.success("Account created successfully.");
-      router.push(getRoleDestination(data.user.role));
+      router.push("/");
       router.refresh();
     } catch (error) {
       console.error(error);
-      toast.error("Sign in failed. Please try again.");
+      toast.error("Sign up failed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -221,7 +217,7 @@ export default function SignInPage() {
             </label>
           </div>
 
-          {/* Guardian Info */}
+          {/* Guardian Info
           <div className="border-t pt-4">
             <h3 className="text-lg font-semibold text-slate-800 mb-3">Guardian Information (if minor)</h3>
             <div className="grid gap-5 md:grid-cols-2">
@@ -248,8 +244,9 @@ export default function SignInPage() {
               </label>
             </div>
           </div>
+          */}
 
-          {/* Emergency Contact */}
+          {/* Emergency Contact 
           <div className="border-t pt-4">
             <h3 className="text-lg font-semibold text-slate-800 mb-3">Emergency Contact</h3>
             <div className="grid gap-5 md:grid-cols-2">
@@ -272,8 +269,9 @@ export default function SignInPage() {
               </label>
             </div>
           </div>
+          */}
 
-          {/* Medical Information */}
+          {/* Medical Information 
           <div className="border-t pt-4">
             <h3 className="text-lg font-semibold text-slate-800 mb-3">Medical Information</h3>
             <div className="grid gap-5 md:grid-cols-2">
@@ -305,7 +303,7 @@ export default function SignInPage() {
                 />
               </label>
             </div>
-          </div>
+          </div> */}
 
           <button
             type="submit"

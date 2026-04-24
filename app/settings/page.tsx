@@ -34,12 +34,12 @@ const defaultSettings: SettingsFormData = {
   systemAlertEmail: "",
 };
 
-type ToggleCardProps = {
+type ToggleCardProps = Readonly<{
   title: string;
   description: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
-};
+}>;
 
 function ToggleCard({ title, description, checked, onChange }: ToggleCardProps) {
   return (
@@ -49,20 +49,16 @@ function ToggleCard({ title, description, checked, onChange }: ToggleCardProps) 
         <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
       </div>
       <span
-        className={`relative mt-1 inline-flex h-7 w-12 shrink-0 items-center rounded-full transition ${
-          checked ? "bg-teal-700" : "bg-slate-300"
-        }`}
-      >
+        className={`relative mt-1 inline-flex h-7 w-12 shrink-0 items-center rounded-full transition ${checked ? "bg-teal-700" : "bg-slate-300"
+          }`}>
         <input
           type="checkbox"
           checked={checked}
           onChange={(event) => onChange(event.target.checked)}
-          className="peer sr-only"
-        />
+          className="peer sr-only" />
         <span
-          className={`inline-block h-5 w-5 rounded-full bg-white shadow transition ${
-            checked ? "translate-x-6" : "translate-x-1"
-          }`}
+          className={`inline-block h-5 w-5 rounded-full bg-white shadow transition ${checked ? "translate-x-6" : "translate-x-1"
+            }`}
         />
       </span>
     </label>
@@ -121,7 +117,7 @@ export default function SettingsPage() {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSaving(true);
 

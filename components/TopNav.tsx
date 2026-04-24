@@ -40,7 +40,7 @@ export default function TopNav() {
   const [loading, setLoading] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const settingsMenuRef = useRef<HTMLDivElement | null>(null);
-  const idleTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const idleTimerRef = useRef<number | null>(null);
   const isLoggingOutRef = useRef(false);
 
   useEffect(() => {
@@ -178,6 +178,14 @@ export default function TopNav() {
   }, [user]);
 
   const visibleNavLinks = navLinks.filter((link) => {
+    if (link.href === "/dashboard") {
+      return Boolean(user);
+    }
+
+    if (link.href === "/appointments") {
+      return user?.role !== "doctor";
+    }
+
     if (link.href === "/doctors") {
       return user?.role === "admin" || user?.role === "doctor";
     }
@@ -216,12 +224,14 @@ export default function TopNav() {
               <div className="hidden rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 sm:block">
                 {user.name} | {user.role}
               </div>
-              <button
+              {/* <button
                 type="button"
-                onClick={handleLogout}
+                onClick={() => {
+                  void handleLogout();
+                }}
                 className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-700 hover:text-teal-700">
                 Log Out
-              </button>
+              </button> */}
 
               <div ref={settingsMenuRef} className="relative">
                 <button
@@ -260,7 +270,9 @@ export default function TopNav() {
                   </Link>
                   <button
                     type="button"
-                    onClick={handleLogout}
+                    onClick={() => {
+                      void handleLogout();
+                    }}
                     className="block w-full px-4 py-3 text-left text-sm font-medium text-slate-700 transition hover:bg-teal-50 hover:text-teal-700 focus:bg-teal-50 focus:text-teal-700 focus:outline-none">
                     Log Out
                   </button>

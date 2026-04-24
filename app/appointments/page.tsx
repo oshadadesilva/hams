@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
 import { generateHalfHourSlots, getDayName, type DoctorSeed } from "@/lib/demo-data";
-import { AppointmentRecord } from "@/lib/auth";
+import { AppointmentRecord } from "@/lib/auth-shared";
 import { findHospitalAvailability, flattenHospitalAvailability } from "@/lib/doctor-schedule";
 
 type AvailabilitySlot = DoctorSeed["hospitals"][number]["availability"][number];
@@ -40,14 +40,29 @@ function formatTime12(time: string) {
   return `${normalizedHours}:${minutes.padStart(2, "0")} ${period}`;
 }
 
+function isWeekendDate(date: string) {
+  const day = new Date(`${date}T00:00:00`).getDay();
+  return day === 0 || day === 6;
+}
+
+function isMorningTime(time: string) {
+  const [hours] = time.split(":");
+  const parsedHours = Number(hours);
+  return !Number.isNaN(parsedHours) && parsedHours < 12;
+}
+
 function getHospitalName(doctor: DoctorRecord) {
   return doctor.hospitals[0]?.hospitalName?.trim() || "Hospital not assigned";
 }
 
 export default function AppointmentsPage() {
   const toast = useToast();
+  const suggestedSlotsRef = useRef<HTMLElement | null>(null);
+  const slotResultsRef = useRef<HTMLElement | null>(null);
+  const bookingSectionRef = useRef<HTMLElement | null>(null);
   const [doctors, setDoctors] = useState<DoctorRecord[]>([]);
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
+  const [currentUserRole, setCurrentUserRole] = useState<"admin" | "patient" | "doctor" | null>(null);
   const [selectedDoctorId, setSelectedDoctorId] = useState("");
   const [selectedSpecialization, setSelectedSpecialization] = useState("");
   const [selectedHospital, setSelectedHospital] = useState("");
@@ -83,6 +98,7 @@ export default function AppointmentsPage() {
         const authData = await authResponse.json();
 
         if (authResponse.ok && authData.success) {
+          setCurrentUserRole(authData.user?.role ?? null);
           setPatientTitle(authData.user?.title ?? "");
           setPatientName(authData.user?.name ?? "");
           setPatientEmail(authData.user?.email ?? "");
@@ -270,9 +286,114 @@ export default function AppointmentsPage() {
     );
   }, [appointments, selectedDoctor, selectedHospital]);
 
+  const suggestedSlots = useMemo(() => {
+    if (!selectedDoctor || !selectedHospital) {
+      return [];
+    }
+
+    const hospital = selectedDoctor.hospitals.find(
+      (entry) => entry.hospitalName === selectedHospital
+    );
+
+    if (!hospital) {
+      return [];
+    }
+
+    return upcomingDateOptions
+      .map((date) => {
+        const dayName = getDayName(date);
+        const bookedStarts = new Set(
+          appointments
+            .filter(
+              (appointment) =>
+                appointment.appointmentDate === date &&
+                appointment.status === "booked" &&
+                appointment.doctorName === selectedDoctor.name &&
+                appointment.hospitalName === selectedHospital
+            )
+            .map((appointment) => appointment.appointmentTime)
+        );
+
+        const openSlots = hospital.availability
+          .filter((slot) => slot.day === dayName && slot.isAvailable)
+          .flatMap((slot: AvailabilitySlot) => generateHalfHourSlots(slot.startTime, slot.endTime))
+          .filter((slot) => !bookedStarts.has(slot));
+
+        if (openSlots.length === 0) {
+          return null;
+        }
+
+        const recommendedTime =
+          openSlots.find((slot) => isMorningTime(slot)) ?? openSlots[0];
+
+        return {
+          date,
+          label: formatDateLabel(date),
+          recommendedTime,
+          openSlotsCount: openSlots.length,
+          isWeekend: isWeekendDate(date),
+          isMorning: isMorningTime(recommendedTime),
+          appointmentNumber: openSlots.indexOf(recommendedTime) + 1,
+        };
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+      .sort((a, b) => {
+        if (b.openSlotsCount !== a.openSlotsCount) {
+          return b.openSlotsCount - a.openSlotsCount;
+        }
+
+        if (Number(b.isWeekend) !== Number(a.isWeekend)) {
+          return Number(b.isWeekend) - Number(a.isWeekend);
+        }
+
+        if (Number(b.isMorning) !== Number(a.isMorning)) {
+          return Number(b.isMorning) - Number(a.isMorning);
+        }
+
+        if (a.date !== b.date) {
+          return a.date.localeCompare(b.date);
+        }
+
+        return a.recommendedTime.localeCompare(b.recommendedTime);
+      })
+      .slice(0, 5);
+  }, [appointments, selectedDoctor, selectedHospital]);
+
   useEffect(() => {
     setAppointmentTime((current) => (availableSlots.includes(current) ? current : availableSlots[0] ?? ""));
   }, [availableSlots]);
+
+  const isPatientLoggedIn = currentUserRole === "patient";
+
+  useEffect(() => {
+    if (!selectedDoctor || !selectedHospital) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      suggestedSlotsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [selectedDoctor, selectedHospital]);
+
+  useEffect(() => {
+    if (!selectedDoctor) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      slotResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [selectedDoctor]);
+
+  useEffect(() => {
+    if (!selectedDate) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      bookingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [selectedDate]);
 
   function selectDoctorForBooking(doctorId: string) {
     setSelectedDoctorId(doctorId);
@@ -543,8 +664,85 @@ export default function AppointmentsPage() {
           )}
         </section>
 
+        {selectedDoctor && selectedHospital ? (
+          <section
+            ref={suggestedSlotsRef}
+            className="rounded-4xl border border-(--line) bg-(--panel) px-6 py-6 shadow-[0_16px_48px_rgba(18,52,59,0.08)] sm:px-8"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">Suggested Slots</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+                  Best recommended date and time options
+                </h2>
+                <p className="mt-2 text-sm text-slate-600">
+                  Ranked by more open slots first, then weekends, then morning sessions.
+                </p>
+              </div>
+              <span className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                {selectedDoctor.name} at {selectedHospital}
+              </span>
+            </div>
+
+            {suggestedSlots.length === 0 ? (
+              <div className="mt-6 rounded-4xl border border-dashed border-slate-300 bg-white/70 px-5 py-6 text-sm text-slate-600">
+                No suggested slots are available for this doctor and hospital in the next 2 weeks.
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {suggestedSlots.map((slot) => {
+                  const isSelected =
+                    selectedDate === slot.date &&
+                    appointmentTime === slot.recommendedTime;
+
+                  return (
+                    <article
+                      key={`${slot.date}-${slot.recommendedTime}`}
+                      className={`rounded-3xl border px-5 py-5 transition ${
+                        isSelected ? "border-teal-700 bg-teal-50/80" : "border-slate-200 bg-white"
+                      }`}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h3 className="text-lg font-semibold text-slate-900">{slot.label}</h3>
+                          <p className="mt-1 text-sm text-slate-600">{formatTime12(slot.recommendedTime)}</p>
+                        </div>
+                        {slot.isWeekend ? (
+                          <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                            Weekend
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div className="mt-4 space-y-1 text-sm text-slate-600">
+                        <p>{slot.openSlotsCount} open slot(s) on this day</p>
+                        <p>Suggested appointment no. {slot.appointmentNumber}</p>
+                        <p>{slot.isMorning ? "Morning session" : "Later session"}</p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedDate(slot.date);
+                          setAppointmentTime(slot.recommendedTime);
+                        }}
+                        className="mt-5 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-700 hover:text-teal-700"
+                      >
+                        Choose suggestion
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        ) : null}
+
         {selectedDoctor ? (
-          <section className="rounded-4xl border border-(--line) bg-(--panel-strong) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)] sm:p-8">
+          <section
+            ref={slotResultsRef}
+            className="rounded-4xl border border-(--line) bg-(--panel-strong) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)] sm:p-8"
+          >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium uppercase tracking-[0.28em] text-amber-600">Slot Results</p>
@@ -616,7 +814,10 @@ export default function AppointmentsPage() {
         ) : null}
 
         {selectedDate ? (
-          <section className="rounded-4xl border border-(--line) bg-(--panel) px-6 py-6 shadow-[0_16px_48px_rgba(18,52,59,0.08)] sm:px-8">
+          <section
+            ref={bookingSectionRef}
+            className="rounded-4xl border border-(--line) bg-(--panel) px-6 py-6 shadow-[0_16px_48px_rgba(18,52,59,0.08)] sm:px-8"
+          >
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">Book Appointment</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Complete your booking</h2>
@@ -629,6 +830,7 @@ export default function AppointmentsPage() {
                   <select
                     value={patientTitle}
                     onChange={(event) => setPatientTitle(event.target.value)}
+                    disabled={isPatientLoggedIn}
                     className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700">
                     <option value="">Select title</option>
                     <option value="Mr.">Mr.</option>
@@ -644,6 +846,7 @@ export default function AppointmentsPage() {
                     required
                     value={patientName}
                     onChange={(event) => setPatientName(event.target.value)}
+                    readOnly={isPatientLoggedIn}
                     className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none ring-0 transition focus:border-teal-700"
                     placeholder="Jane Doe" />
                 </label>

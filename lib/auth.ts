@@ -1,34 +1,9 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
-
+export { type AppointmentRecord, type SessionUser, type UserRole } from "@/lib/auth-shared";
 export const AUTH_COOKIE_NAME = "hams_auth";
 export const SESSION_DURATION_SECONDS = 60 * 60 * 24;// * 7;
-
-export type UserRole = "admin" | "patient" | "doctor";
-
-export type SessionUser = {
-  userId: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: UserRole;
-};
-
-export type AppointmentRecord = {
-  _id: string;
-  doctorId: string;
-  patientName: string;
-  patientEmail: string;
-  phone: string;
-  doctorName: string;
-  hospitalName: string;
-  appointmentDate: string;
-  appointmentTime: string;
-  reason?: string;
-  status: string;
-  createdAt?: string;
-  updatedAt?: string;
-};
+import type { SessionUser, UserRole } from "@/lib/auth-shared";
 
 
 type TokenPayload = SessionUser & {

@@ -6,17 +6,33 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
 import { type DoctorSeed } from "@/lib/demo-data";
-import { SessionUser, AppointmentRecord } from "@/lib/auth";
+import { SessionUser, AppointmentRecord } from "@/lib/auth-shared";
 import { flattenHospitalAvailability } from "@/lib/doctor-schedule";
 
+function formatDateLabel(date: string) {
+  return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
 
-// Dummy data – no API calls, no errors
-const upcomingAppointments = [
-  { id: "a1", patient: "Emma Wilson", date: "2026-04-14", time: "09:00 - 09:30", reason: "Annual checkup", status: "Confirmed" },
-  { id: "a2", patient: "James Brown", date: "2026-04-14", time: "10:15 - 10:45", reason: "Follow-up", status: "Confirmed" },
-  { id: "a3", patient: "Maria Garcia", date: "2026-04-14", time: "11:30 - 12:00", reason: "Consultation", status: "Pending" },
-  { id: "a4", patient: "Li Wei", date: "2026-04-14", time: "14:00 - 14:30", reason: "Lab results", status: "Confirmed" },
-];
+function formatTime12(time: string) {
+  const [hours, minutes] = time.split(":");
+  if (!hours || !minutes) {
+    return time;
+  }
+
+  const parsedHours = Number(hours);
+  if (Number.isNaN(parsedHours)) {
+    return time;
+  }
+
+  const period = parsedHours >= 12 ? "PM" : "AM";
+  const normalizedHours = parsedHours % 12 || 12;
+  return `${normalizedHours}:${minutes.padStart(2, "0")} ${period}`;
+}
 
 const recentPatients = [
   { id: "p1", name: "Emma Wilson", lastVisit: "2026-04-07", condition: "Hypertension" },
@@ -28,11 +44,12 @@ export default function DoctorDashboard() {
   const router = useRouter();
   const toast = useToast();
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
-  const [selectedDoctorId, setSelectedDoctorId] = useState("");
+  // const [selectedDoctorId, setSelectedDoctorId] = useState("");
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
   const [editorSlots, setEditorSlots] = useState<ReturnType<typeof flattenHospitalAvailability>>([]);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
 
   useEffect(() => {
     const loadDoctors = async () => {
@@ -60,42 +77,61 @@ export default function DoctorDashboard() {
         setIsAuthorized(true);
 
         if (datas.user?.role === "doctor") {
-          const response = await fetch("/api/doctors", { cache: "no-store" });
-          const data = await response.json();
+          const [appointmentsResponse, doctorsResponse] = await Promise.all([
+            fetch("/api/appointments", { cache: "no-store" }),
+            fetch("/api/doctors", { cache: "no-store" }),
+          ]);
+          const appointmentsData = await appointmentsResponse.json() as { success: boolean; appointments: AppointmentRecord[]; message?: string };
+          const data = await doctorsResponse.json() as { success: boolean; doctors: DoctorSeed[]; message?: string };
 
-          if (response.ok && data.success) {
-            const doctorsList = data.doctors as DoctorSeed[];
+          if (!appointmentsResponse.ok || !appointmentsData.success) {
+            toast.error(appointmentsData.message ?? "Unable to load appointments.");
+            return;
+          }
 
-            const doctorToSelect = doctorsList.find((doc: DoctorSeed) => doc.email === datas.user.email);
+          if (!doctorsResponse.ok || !data.success) {
+            toast.error(data.message ?? "Unable to load doctors.");
+            return;
+          }
+
+          if (doctorsResponse.ok && data.success) {
+            const doctorToSelect = data.doctors.find((doc: DoctorSeed) => doc.email === datas.user.email);
             console.log(doctorToSelect);
 
             setSessionUser(datas.user);
-            setSelectedDoctorId(doctorToSelect?._id ?? "");
+            //setSelectedDoctorId(doctorToSelect?._id ?? "");
             setEditorSlots(flattenHospitalAvailability(doctorToSelect?.hospitals ?? []));
-
-            const responsesAppoint = await fetch("/api/appointments", { cache: "no-store" });
-            const dataAppoint = await responsesAppoint.json();
-
-            console.log("Appointments data:", dataAppoint);
-
-
+            setAppointments(appointmentsData.appointments);
           }
           else {
             toast.error("Failed to load doctors.");
           }
 
-          const responseAppointments = await fetch("/api/appointments", { cache: "no-store" });
-          const dataAppointments = await responseAppointments.json();
-
-          if (responseAppointments.ok && dataAppointments.success) {
-            const appointmentsList = dataAppointments.appointments as AppointmentRecord[];
-            console.log(appointmentsList);
-            //const appointmentsList = dataAppointments.appointments.find((doc: AppointmentRecord) => doc.doctorName === datas.user.name);
-            setAppointments(appointmentsList);
+          if (appointmentsResponse.ok && appointmentsData.success) {
+            setAppointments(appointmentsData.appointments.filter((appointment) => appointment.status === "booked").toSorted(
+              (a, b) =>
+                new Date(`${b.appointmentDate}T${b.appointmentTime}:00`).getTime() -
+                new Date(`${a.appointmentDate}T${a.appointmentTime}:00`).getTime()
+            ));
+          }
+          else {
+            toast.error("Failed to load appointments.");
           }
         }
         else {
           setSessionUser(datas.user);
+
+          const appointmentsResponse = await fetch("/api/appointments", { cache: "no-store" });
+          const appointmentsData = await appointmentsResponse.json() as { success: boolean; appointments: AppointmentRecord[]; message?: string };
+
+          if (!appointmentsResponse.ok || !appointmentsData.success) {
+            toast.error(appointmentsData.message ?? "Unable to load appointments.");
+            return;
+          }
+
+          if (appointmentsResponse.ok && appointmentsData.success) {
+            setAppointments(appointmentsData.appointments);
+          }
         }
       } catch (error) {
         console.error(error);
@@ -157,8 +193,8 @@ export default function DoctorDashboard() {
         <section className="grid gap-4 md:grid-cols-3">
           <article className="rounded-[1.75rem] border border-(--line) bg-(--panel) p-6 shadow-[0_12px_40px_rgba(18,52,59,0.06)]">
             <h2 className="text-xl font-semibold text-slate-900">Today&apos;s Appointments</h2>
-            <p className="mt-1 text-4xl font-bold text-teal-700">4</p>
-            <p className="mt-3 text-sm leading-7 text-slate-600">3 confirmed, 1 pending.</p>
+            <p className="mt-1 text-4xl font-bold text-teal-700">{appointments.length}</p>
+            <p className="mt-3 text-sm leading-7 text-slate-600">{appointments.filter((a) => a.status === "book").length}  Completed, {appointments.filter((a) => a.status === "cancelled").length} Cancelled.</p>
           </article>
           <article className="rounded-[1.75rem] border border-(--line) bg-(--panel) p-6 shadow-[0_12px_40px_rgba(18,52,59,0.06)]">
             <h2 className="text-xl font-semibold text-slate-900">Total Patients</h2>
@@ -172,7 +208,7 @@ export default function DoctorDashboard() {
           </article>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <section className="grid gap-6 lg:grid-cols-[1.5fr_0.5fr]">
           <article className="rounded-4xl border border-(--line) bg-(--panel-strong) p-8 shadow-[0_16px_48px_rgba(18,52,59,0.07)]">
             <div className="flex items-center justify-between">
               <div>
@@ -187,6 +223,7 @@ export default function DoctorDashboard() {
               <table className="w-full text-sm">
                 <thead className="border-b border-slate-200">
                   <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    <th className="pb-3">Date</th>
                     <th className="pb-3">Time</th>
                     <th className="pb-3">Patient</th>
                     <th className="pb-3">Reason</th>
@@ -195,14 +232,14 @@ export default function DoctorDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {upcomingAppointments.map((apt) => (
-                    <tr key={apt.id} className="text-slate-700">
-                      <td className="py-3 pr-4">{apt.time}</td>
-                      <td className="py-3 pr-4 font-medium">{apt.patient}</td>
+                  {appointments.map((apt) => (
+                    <tr key={apt._id} className="text-slate-700">
+                      <td className="py-3 pr-4">{formatDateLabel(apt.appointmentDate)}</td>
+                      <td className="py-3 pr-4">{formatTime12(apt.appointmentTime)}</td>
+                      <td className="py-3 pr-4 font-medium">{apt.patientName}</td>
                       <td className="py-3 pr-4">{apt.reason}</td>
                       <td className="py-3">
-                        <span className={`inline-block rounded-full px-2 py-1 text-xs font-medium ${apt.status === "Confirmed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
-                          }`}>
+                        <span className={`inline-block rounded-full px-2 py-1 text-xs font-medium ${apt.status === "Confirmed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>
                           {apt.status}
                         </span>
                       </td>

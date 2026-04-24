@@ -1,316 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ToastProvider";
-import { AppointmentRecord, SessionUser } from "@/lib/auth";
+import { AppointmentRecord, SessionUser, formatDateLabel, formatTime12 } from "@/lib/auth-shared";
 import { generateHalfHourSlots, getDayName, type DoctorSeed } from "@/lib/demo-data";
 import { findHospitalAvailability } from "@/lib/doctor-schedule";
+import StatisticsCards from "@/components/StatisticsCards";
+import CancelConfirmationModal from "@/components/CancelConfirmationModal";
+import AppointmentDetails from "@/components/AppointmentDetails";
+import AppointmentsTable from "@/components/AppointmentsTable";
 
-type AppointmentStatus = AppointmentRecord["status"];
 type DoctorRecord = DoctorSeed;
 type AvailabilitySlot = DoctorSeed["hospitals"][number]["availability"][number];
-
-function formatDateLabel(date: string) {
-    return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-    });
-}
-
-function formatTime12(time: string) {
-    const [hours, minutes] = time.split(":");
-    if (!hours || !minutes) {
-        return time;
-    }
-
-    const parsedHours = Number(hours);
-    if (Number.isNaN(parsedHours)) {
-        return time;
-    }
-
-    const period = parsedHours >= 12 ? "PM" : "AM";
-    const normalizedHours = parsedHours % 12 || 12;
-    return `${normalizedHours}:${minutes.padStart(2, "0")} ${period}`;
-}
-
-function formatDateTime(date: string, time: string) {
-    return `${formatDateLabel(date)} at ${formatTime12(time)}`;
-}
-
-function getStatusBadgeClass(status: AppointmentStatus) {
-    if (status === "completed") {
-        return "bg-emerald-100 text-emerald-800";
-    }
-
-    if (status === "cancelled") {
-        return "bg-rose-100 text-rose-800";
-    }
-
-    return "bg-amber-100 text-amber-800";
-}
-
-function StatisticsCards({
-    user,
-    groupedStatuses,
-    appointments,
-}: Readonly<{
-    user: SessionUser | null;
-    groupedStatuses: { booked: number; completed: number; cancelled: number };
-    appointments: AppointmentRecord[];
-}>) {
-    if (user?.role === "admin") {
-        return (
-            <section className="grid gap-4 md:grid-cols-3">
-                <article className="rounded-[1.75rem] border border-(--line) bg-(--panel) p-6 shadow-[0_12px_40px_rgba(18,52,59,0.06)]">
-                    <h2 className="text-xl font-semibold text-slate-900">Booked</h2>
-                    <p className="mt-2 text-4xl font-bold text-amber-600">{groupedStatuses.booked}</p>
-                    <p className="mt-3 text-sm leading-7 text-slate-600">Appointments currently reserved and upcoming.</p>
-                </article>
-                <article className="rounded-[1.75rem] border border-(--line) bg-(--panel) p-6 shadow-[0_12px_40px_rgba(18,52,59,0.06)]">
-                    <h2 className="text-xl font-semibold text-slate-900">Completed</h2>
-                    <p className="mt-2 text-4xl font-bold text-emerald-600">{groupedStatuses.completed}</p>
-                    <p className="mt-3 text-sm leading-7 text-slate-600">Appointments that have already been fulfilled.</p>
-                </article>
-                <article className="rounded-[1.75rem] border border-(--line) bg-(--panel) p-6 shadow-[0_12px_40px_rgba(18,52,59,0.06)]">
-                    <h2 className="text-xl font-semibold text-slate-900">Cancelled</h2>
-                    <p className="mt-2 text-4xl font-bold text-rose-600">{groupedStatuses.cancelled}</p>
-                    <p className="mt-3 text-sm leading-7 text-slate-600">Appointments that were cancelled and need review if required.</p>
-                </article>
-            </section>
-        );
-    }
-
-    return (
-        <section className="grid gap-4 md:grid-cols-3">
-            <article className="rounded-[1.75rem] border border-(--line) bg-(--panel) p-6 shadow-[0_12px_40px_rgba(18,52,59,0.06)]">
-                <h2 className="text-xl font-semibold text-slate-900">Total Appointments</h2>
-                <p className="mt-2 text-4xl font-bold text-teal-700">{appointments.length}</p>
-                <p className="mt-3 text-sm leading-7 text-slate-600">
-                    {user?.role === "patient"
-                        ? "Appointments booked under your account."
-                        : "Appointments assigned to your doctor profile."}
-                </p>
-            </article>
-            <article className="rounded-[1.75rem] border border-(--line) bg-(--panel) p-6 shadow-[0_12px_40px_rgba(18,52,59,0.06)]">
-                <h2 className="text-xl font-semibold text-slate-900">Booked</h2>
-                <p className="mt-2 text-4xl font-bold text-amber-600">{groupedStatuses.booked}</p>
-                <p className="mt-3 text-sm leading-7 text-slate-600">Upcoming appointments that are still active.</p>
-            </article>
-            <article className="rounded-[1.75rem] border border-(--line) bg-(--panel) p-6 shadow-[0_12px_40px_rgba(18,52,59,0.06)]">
-                <h2 className="text-xl font-semibold text-slate-900">Completed or Cancelled</h2>
-                <p className="mt-2 text-4xl font-bold text-slate-900">{groupedStatuses.completed + groupedStatuses.cancelled}</p>
-                <p className="mt-3 text-sm leading-7 text-slate-600">Closed appointments no longer awaiting action.</p>
-            </article>
-        </section>
-    );
-}
-
-function AppointmentDetails({
-    appointment,
-    onClose,
-}: Readonly<{
-    appointment: AppointmentRecord;
-    onClose: () => void;
-}>) {
-    return (
-        <section className="rounded-4xl border border-(--line) bg-(--panel) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)] sm:p-8">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">Appointment Details</p>
-                    <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-                        {appointment.patientName} with {appointment.doctorName}
-                    </h2>
-                </div>
-                <button
-                    type="button"
-                    onClick={onClose}
-                    className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-700 hover:text-teal-700">
-                    Close
-                </button>
-            </div>
-
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <article className="rounded-3xl border border-slate-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Date and Time</p>
-                    <p className="mt-2 text-sm text-slate-700">{formatDateTime(appointment.appointmentDate, appointment.appointmentTime)}</p>
-                </article>
-                <article className="rounded-3xl border border-slate-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Hospital</p>
-                    <p className="mt-2 text-sm text-slate-700">{appointment.hospitalName}</p>
-                </article>
-                <article className="rounded-3xl border border-slate-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Status</p>
-                    <p className="mt-2 text-sm capitalize text-slate-700">{appointment.status}</p>
-                </article>
-                <article className="rounded-3xl border border-slate-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Patient Email</p>
-                    <p className="mt-2 text-sm text-slate-700">{appointment.patientEmail}</p>
-                </article>
-                <article className="rounded-3xl border border-slate-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Phone</p>
-                    <p className="mt-2 text-sm text-slate-700">{appointment.phone}</p>
-                </article>
-                <article className="rounded-3xl border border-slate-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Reason</p>
-                    <p className="mt-2 text-sm text-slate-700">{appointment.reason || "No reason provided."}</p>
-                </article>
-            </div>
-        </section>
-    );
-}
-
-function CancelConfirmationModal({
-    appointment,
-    isOpen,
-    isSaving,
-    onConfirm,
-    onClose,
-}: Readonly<{
-    appointment: AppointmentRecord;
-    isOpen: boolean;
-    isSaving: boolean;
-    onConfirm: () => void;
-    onClose: () => void;
-}>) {
-    return (
-        <div
-            className={`fixed inset-0 z-50 flex items-center justify-center px-4 transition-all duration-200 ease-in-out ${isOpen ? "pointer-events-auto bg-slate-950/45 opacity-100" : "pointer-events-none bg-slate-950/0 opacity-0"
-                }`}>
-            <div
-                className={`w-full max-w-md rounded-4xl border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.22)] transition-all duration-200 ease-in-out sm:p-8 ${isOpen ? "translate-y-0 scale-100 opacity-100" : "translate-y-4 scale-95 opacity-0"
-                    }`}>
-                <p className="text-sm font-medium uppercase tracking-[0.28em] text-rose-600">Cancel Appointment</p>
-                <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">Confirm cancellation</h2>
-                <p className="mt-4 text-sm leading-7 text-slate-600">
-                    Are you sure you want to cancel the appointment for {appointment.patientName} with {appointment.doctorName} on{" "}
-                    {formatDateTime(appointment.appointmentDate, appointment.appointmentTime)}?
-                </p>
-
-                <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                    <p><span className="font-semibold">Hospital:</span> {appointment.hospitalName}</p>
-                    <p className="mt-2"><span className="font-semibold">Reason:</span> {appointment.reason || "No reason provided."}</p>
-                </div>
-
-                <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={isSaving}
-                        className="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-teal-700 hover:text-teal-700 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400">
-                        No
-                    </button>
-                    <button
-                        type="button"
-                        onClick={onConfirm}
-                        disabled={isSaving}
-                        className="rounded-full bg-rose-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-slate-400">
-                        {isSaving ? "Cancelling..." : "Yes"}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function AppointmentsTable({
-    appointments,
-    isSaving,
-    onView,
-    onReschedule,
-    onCancel,
-}: Readonly<{
-    appointments: AppointmentRecord[];
-    isSaving: boolean;
-    onView: (appointment: AppointmentRecord) => void;
-    onReschedule: (appointment: AppointmentRecord) => void;
-    onCancel: (appointment: AppointmentRecord) => void;
-}>) {
-    return (
-        <section className="rounded-4xl border border-(--line) bg-(--panel-strong) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)] sm:p-8">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <p className="text-sm font-medium uppercase tracking-[0.28em] text-amber-600">Appointments</p>
-                    <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-                        {appointments.length > 0 ? "All appointments" : "No appointments"}
-                    </h2>
-                </div>
-                <span className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
-                    {appointments.length} record{appointments.length === 1 ? "" : "s"}
-                </span>
-            </div>
-
-            {appointments.length === 0 ? (
-                <div className="mt-6 rounded-3xl border border-dashed border-slate-300 bg-white/70 px-5 py-6 text-sm text-slate-600">
-                    No appointments found for this account.
-                </div>
-            ) : (
-                <div className="mt-6 overflow-x-auto">
-                    <table className="w-full min-w-180 text-sm">
-                        <thead className="border-b border-slate-200">
-                            <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                                <th className="pb-3 pr-4">Patient</th>
-                                <th className="pb-3 pr-4">Doctor</th>
-                                <th className="pb-3 pr-4">Hospital</th>
-                                <th className="pb-3 pr-4">Date</th>
-                                <th className="pb-3 pr-4">Time</th>
-                                <th className="pb-3">Status</th>
-                                <th className="pb-3">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {appointments.map((appointment) => {
-                                const actionsDisabled = isSaving || appointment.status !== "booked";
-
-                                return (
-                                    <tr key={appointment._id} className="text-slate-700">
-                                        <td className="py-4 pr-4 font-medium text-slate-900">{appointment.patientName}</td>
-                                        <td className="py-4 pr-4">{appointment.doctorName}</td>
-                                        <td className="py-4 pr-4">{appointment.hospitalName}</td>
-                                        <td className="py-4 pr-4">{formatDateLabel(appointment.appointmentDate)}</td>
-                                        <td className="py-4 pr-4">{formatTime12(appointment.appointmentTime)}</td>
-                                        <td className="py-4">
-                                            <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass(appointment.status)}`}>
-                                                {appointment.status}
-                                            </span>
-                                        </td>
-                                        <td className="py-4">
-                                            <div className="flex flex-wrap gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => onView(appointment)}
-                                                    className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-700 hover:text-teal-700">
-                                                    View
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    disabled={actionsDisabled}
-                                                    onClick={() => onReschedule(appointment)}
-                                                    className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-700 hover:text-teal-700 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400">
-                                                    Re-Schedule
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    disabled={actionsDisabled}
-                                                    onClick={() => onCancel(appointment)}
-                                                    className="rounded-2xl border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:border-rose-500 hover:text-rose-800 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400">
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-        </section>
-    );
-}
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -332,6 +35,8 @@ export default function DashboardPage() {
     const [reason, setReason] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const appointmentDetailsRef = useRef<HTMLDivElement | null>(null);
+    const rescheduleSectionRef = useRef<HTMLElement | null>(null);
 
     useEffect(() => {
         async function loadDashboard() {
@@ -459,13 +164,25 @@ export default function DashboardPage() {
         setAppointmentTime((current) => (availableSlots.includes(current) ? current : availableSlots[0] ?? ""));
     }, [availableSlots]);
 
+    useEffect(() => {
+        if (selectedAppointment && !editingAppointment) {
+            appointmentDetailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    }, [editingAppointment, selectedAppointment]);
+
+    useEffect(() => {
+        if (editingAppointment) {
+            rescheduleSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    }, [editingAppointment]);
+
     function openAppointmentDetails(appointment: AppointmentRecord) {
         stopRescheduling();
         setSelectedAppointmentId(appointment._id);
     }
 
     function startRescheduling(appointment: AppointmentRecord) {
-        setSelectedAppointmentId(appointment._id);
+        setSelectedAppointmentId("");
         setEditingAppointmentId(appointment._id);
         setSelectedDoctorId(appointment.doctorId);
         setSelectedHospital(appointment.hospitalName);
@@ -548,7 +265,7 @@ export default function DashboardPage() {
         }
     }
 
-    async function handleRescheduleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    async function handleRescheduleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
         event.preventDefault();
 
         if (!editingAppointmentId || !selectedDoctorId || !selectedHospital || !selectedDate || !appointmentTime) {
@@ -641,6 +358,7 @@ export default function DashboardPage() {
                 <StatisticsCards user={user} groupedStatuses={groupedStatuses} appointments={appointments} />
                 <AppointmentsTable
                     appointments={appointments}
+                    userRole={user?.role}
                     isSaving={isSaving}
                     onView={openAppointmentDetails}
                     onReschedule={startRescheduling}
@@ -662,14 +380,16 @@ export default function DashboardPage() {
                 ) : null}
 
                 {selectedAppointment ? (
-                    <AppointmentDetails
-                        appointment={selectedAppointment}
-                        onClose={() => setSelectedAppointmentId("")}
-                    />
+                    <div ref={appointmentDetailsRef}>
+                        <AppointmentDetails
+                            appointment={selectedAppointment}
+                            onClose={() => setSelectedAppointmentId("")}
+                        />
+                    </div>
                 ) : null}
 
                 {editingAppointment ? (
-                    <section className="rounded-4xl border border-(--line) bg-(--panel) px-6 py-6 shadow-[0_16px_48px_rgba(18,52,59,0.08)] sm:px-8">
+                    <section ref={rescheduleSectionRef} className="rounded-4xl border border-(--line) bg-(--panel) px-6 py-6 shadow-[0_16px_48px_rgba(18,52,59,0.08)] sm:px-8">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
                                 <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">Re-Schedule Appointment</p>
