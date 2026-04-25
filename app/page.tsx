@@ -45,10 +45,10 @@ export default function Home() {
             HAMS turns appointment booking and doctor scheduling <br className="hidden md:block" />
             into one connected workflow.
           </h1>
-          <p className="mt-6 text-lg text-slate-600 max-w-2xl mx-auto">
+          {/* <p className="mt-6 text-lg text-slate-600 max-w-2xl mx-auto">
             Built with Next.js, Node.js route handlers, MongoDB, and Mongoose – this starter gives you the
             frontend, backend logic, and database integration in one place.
-          </p>
+          </p> */}
 
           {/* Beautiful Make an Appointment button */}
           <div className="mt-10">

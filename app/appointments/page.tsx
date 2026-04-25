@@ -58,12 +58,16 @@ function getHospitalName(doctor: DoctorRecord) {
 export default function AppointmentsPage() {
   const toast = useToast();
   const suggestedSlotsRef = useRef<HTMLElement | null>(null);
+  const hospitalResultsRef = useRef<HTMLElement | null>(null);
+  const doctorResultsRef = useRef<HTMLElement | null>(null);
   const slotResultsRef = useRef<HTMLElement | null>(null);
   const bookingSectionRef = useRef<HTMLElement | null>(null);
   const [doctors, setDoctors] = useState<DoctorRecord[]>([]);
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
   const [currentUserRole, setCurrentUserRole] = useState<"admin" | "patient" | "doctor" | null>(null);
   const [selectedDoctorId, setSelectedDoctorId] = useState("");
+  const [hasConfirmedDoctorSelection, setHasConfirmedDoctorSelection] = useState(false);
+  const [hasConfirmedHospitalSelection, setHasConfirmedHospitalSelection] = useState(false);
   const [selectedSpecialization, setSelectedSpecialization] = useState("");
   const [selectedHospital, setSelectedHospital] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
@@ -74,6 +78,7 @@ export default function AppointmentsPage() {
   const [patientPhone, setPatientPhone] = useState("");
   const [reason, setReason] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [pendingScrollTarget, setPendingScrollTarget] = useState<"doctor-results" | "hospital-selection" | "suggested-slots" | null>(null);
 
   useEffect(() => {
     const loadDoctors = async () => {
@@ -366,24 +371,26 @@ export default function AppointmentsPage() {
   const isPatientLoggedIn = currentUserRole === "patient";
 
   useEffect(() => {
-    if (!selectedDoctor || !selectedHospital) {
+    if (!pendingScrollTarget) {
       return;
     }
 
     window.requestAnimationFrame(() => {
-      suggestedSlotsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }, [selectedDoctor, selectedHospital]);
+      if (pendingScrollTarget === "doctor-results") {
+        doctorResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
 
-  useEffect(() => {
-    if (!selectedDoctor) {
-      return;
-    }
+      if (pendingScrollTarget === "hospital-selection") {
+        hospitalResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
 
-    window.requestAnimationFrame(() => {
-      slotResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (pendingScrollTarget === "suggested-slots") {
+        suggestedSlotsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      setPendingScrollTarget(null);
     });
-  }, [selectedDoctor]);
+  }, [pendingScrollTarget]);
 
   useEffect(() => {
     if (!selectedDate) {
@@ -395,11 +402,48 @@ export default function AppointmentsPage() {
     });
   }, [selectedDate]);
 
-  function selectDoctorForBooking(doctorId: string) {
+  function handleDoctorFilterChange(doctorId: string) {
     setSelectedDoctorId(doctorId);
+    setHasConfirmedDoctorSelection(false);
     setSelectedDate("");
     setSelectedHospital("");
     setAppointmentTime("");
+    setPendingScrollTarget(doctorId ? "hospital-selection" : null);
+  }
+
+  function handleSpecializationChange(specialization: string) {
+    setSelectedSpecialization(specialization);
+    setSelectedDoctorId("");
+    setHasConfirmedDoctorSelection(false);
+    setSelectedHospital("");
+    setSelectedDate("");
+    setAppointmentTime("");
+    setPendingScrollTarget(specialization ? "hospital-selection" : null);
+  }
+
+  function selectDoctorForBooking(doctorId: string) {
+    setSelectedDoctorId(doctorId);
+    setHasConfirmedDoctorSelection(true);
+    setHasConfirmedHospitalSelection(true);
+    setSelectedDate("");
+    //setSelectedHospital("");
+    setAppointmentTime("");
+    setPendingScrollTarget("suggested-slots");
+  }
+
+  function handleHospitalFilterChange(hospitalName: string) {
+    setSelectedHospital(hospitalName);
+    setSelectedDate("");
+    setAppointmentTime("");
+    setPendingScrollTarget(hospitalName ? "doctor-results" : null);
+  }
+
+  function selectHospitalForBooking(hospitalName: string) {
+    setSelectedHospital(hospitalName);
+    setHasConfirmedHospitalSelection(true);
+    setSelectedDate("");
+    setAppointmentTime("");
+    setPendingScrollTarget(hospitalName ? "doctor-results" : null);
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -466,7 +510,7 @@ export default function AppointmentsPage() {
               Doctors
               <select
                 value={selectedDoctorId}
-                onChange={(event) => selectDoctorForBooking(event.target.value)}
+                onChange={(event) => handleDoctorFilterChange(event.target.value)}
                 className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700">
                 <option value="">Select doctor</option>
                 {doctors.map((doctor) => (
@@ -481,7 +525,7 @@ export default function AppointmentsPage() {
               Specialization
               <select
                 value={selectedSpecialization}
-                onChange={(event) => setSelectedSpecialization(event.target.value)}
+                onChange={(event) => handleSpecializationChange(event.target.value)}
                 className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700">
                 <option value="">Select specialization</option>
                 {specializationOptions.map((specialization) => (
@@ -496,7 +540,7 @@ export default function AppointmentsPage() {
               Hospital
               <select
                 value={selectedHospital}
-                onChange={(event) => setSelectedHospital(event.target.value)}
+                onChange={(event) => handleHospitalFilterChange(event.target.value)}
                 className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700">
                 <option value="">Select hospital</option>
                 {hospitalOptions.map((hospital) => (
@@ -531,10 +575,12 @@ export default function AppointmentsPage() {
               type="button"
               onClick={() => {
                 setSelectedDoctorId("");
+                setHasConfirmedDoctorSelection(false);
                 setSelectedSpecialization("");
                 setSelectedHospital("");
                 setSelectedDate("");
                 setAppointmentTime("");
+                setPendingScrollTarget(null);
               }}
               className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-700 hover:text-teal-700">
               Clear filters
@@ -542,133 +588,180 @@ export default function AppointmentsPage() {
           </div>
         </section>
 
-        <section className="rounded-4xl border border-(--line) bg-(--panel-strong) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)] sm:p-8">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium uppercase tracking-[0.28em] text-amber-600">Doctor Results</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Available doctors</h2>
+        {hasAtLeastOneFilter && availableHospitalOptions.length > 0 ? (
+          <section
+            ref={hospitalResultsRef}
+            className="rounded-4xl border border-(--line) bg-(--panel) px-6 py-6 shadow-[0_16px_48px_rgba(18,52,59,0.08)] sm:px-8">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">Select Hospital</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+                  Choose the hospital for this appointment
+                </h2>
+                <p className="mt-2 text-sm text-slate-600">
+                  Start with a hospital selection, then review the matching doctors below.
+                </p>
+              </div>
+              {selectedHospital ? (
+                <span className="rounded-full border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-800">
+                  Selected: {selectedHospital}
+                </span>
+              ) : null}
             </div>
-            {hasAtLeastOneFilter ? (
-              <span className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
-                {filteredDoctors.length} result{filteredDoctors.length === 1 ? "" : "s"}
-              </span>
-            ) : null}
-          </div>
 
-          {!hasAtLeastOneFilter ? (
-            <div className="mt-6 rounded-4xl border border-dashed border-slate-300 bg-white/70 px-5 py-6 text-sm text-slate-600">
-              Start by selecting a doctor, specialization, hospital, or date. Matching results will appear here automatically.
-            </div>
-          ) : filteredDoctors.length === 0 ? (
-            <div className="mt-6 rounded-4xl border border-dashed border-slate-300 bg-white/70 px-5 py-6 text-sm text-slate-600">
-              No matching doctors were found for the selected filters. Try changing one of the dropdown values.
-            </div>
-          ) : (
-            <div className="mt-6 grid gap-4">
-              {filteredDoctors.map((doctor) => {
-                const daySlots =
-                  selectedDate
-                    ? (selectedHospital
-                      ? findHospitalAvailability(doctor.hospitals, selectedHospital)?.availability ?? []
-                      : flattenHospitalAvailability(doctor.hospitals)
-                    )
-                      .filter((slot) => slot.day === getDayName(selectedDate) && slot.isAvailable)
-                      .flatMap((slot: AvailabilitySlot) => generateHalfHourSlots(slot.startTime, slot.endTime))
-                    : [];
-
-                const bookedStarts = new Set(
-                  appointments
-                    .filter(
-                      (appointment) =>
-                        appointment.appointmentDate === selectedDate &&
-                        appointment.status === "booked" &&
-                        appointment.doctorName === doctor.name
-                    )
-                    .map((appointment) => appointment.appointmentTime)
-                );
-
-                const openSlots = daySlots.filter((slot) => !bookedStarts.has(slot));
-                const isSelected = selectedDoctorId === doctor._id;
+            <div className="mt-6 flex flex-wrap gap-3">
+              {availableHospitalOptions.map((hospitalName) => {
+                const isSelected = selectedHospital === hospitalName;
 
                 return (
-                  <article
-                    key={doctor._id}
-                    className={`rounded-3xl border px-5 py-5 transition ${isSelected ? "border-teal-700 bg-teal-50/80" : "border-slate-200 bg-white"
+                  <button
+                    key={hospitalName}
+                    type="button"
+                    onClick={() => selectHospitalForBooking(hospitalName)}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${isSelected
+                      ? "bg-teal-700 text-white hover:bg-teal-800"
+                      : "border border-slate-300 bg-white text-slate-700 hover:border-teal-700 hover:text-teal-700"
                       }`}>
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="space-y-2">
-                        <h3 className="text-xl font-semibold text-slate-900">{doctor.name}</h3>
-                        <p className="text-sm text-slate-600">{doctor.specialization}</p>
-                        <p className="text-sm text-slate-600">
-                          {doctor.hospitals.map((hospital) => hospital.hospitalName).join(", ") || "Hospital not assigned"}
-                        </p>
-                        <p className="text-sm text-slate-500">{doctor.phone || "Phone number not available"}</p>
-                      </div>
-
-                      <div className="flex flex-col items-start gap-3 lg:items-end">
-                        <button
-                          type="button"
-                          onClick={() => selectDoctorForBooking(doctor._id)}
-                          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${isSelected
-                            ? "bg-teal-700 text-white hover:bg-teal-800"
-                            : "border border-slate-300 bg-white text-slate-700 hover:border-teal-700 hover:text-teal-700"
-                            }`}>
-                          {isSelected ? "Selected for booking" : "Book with this doctor"}
-                        </button>
-                        {selectedDate ? (
-                          <span className="text-sm text-slate-600">
-                            {openSlots.length > 0 ? `${openSlots.length} slot(s) open on ${formatDateLabel(selectedDate)}` : "No open slots on selected date"}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-slate-600">Choose a Doctor to see open slots</span>
-                        )}
-                      </div>
-                    </div>
-
-                    {selectedDate ? (
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {openSlots.length > 0 ? (
-                          openSlots.map((slot) => (
-                            <span
-                              key={`${doctor._id}-${slot}`}
-                              className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-                              {formatTime12(slot)}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-sm text-slate-500">No available time slots for this day.</span>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {flattenHospitalAvailability(doctor.hospitals).some((slot) => slot.isAvailable) ? (
-                          flattenHospitalAvailability(doctor.hospitals)
-                            .filter((slot) => slot.isAvailable)
-                            .slice(0, 4)
-                            .map((slot) => (
-                              <span
-                                key={`${doctor._id}-${slot.hospitalName}-${slot.day}-${slot.startTime}`}
-                                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-                                {slot.hospitalName}: {slot.day} {formatTime12(slot.startTime)} - {formatTime12(slot.endTime)}
-                              </span>
-                            ))
-                        ) : (
-                          <span className="text-sm text-slate-500">Availability has not been added yet.</span>
-                        )}
-                      </div>
-                    )}
-                  </article>
+                    {hospitalName}
+                  </button>
                 );
               })}
             </div>
-          )}
-        </section>
 
-        {selectedDoctor && selectedHospital ? (
+            <p className="mt-4 text-sm text-slate-600">
+              Select a hospital to view suggested slots and available appointment times for that location.
+            </p>
+          </section>
+        ) : null}
+
+        {selectedHospital && hasConfirmedHospitalSelection ? (
+          <section
+            ref={doctorResultsRef}
+            className="rounded-4xl border border-(--line) bg-(--panel-strong) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)] sm:p-8">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium uppercase tracking-[0.28em] text-amber-600">Doctor Results</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Available doctors</h2>
+              </div>
+              <span className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                {filteredDoctors.length} result{filteredDoctors.length === 1 ? "" : "s"}
+              </span>
+            </div>
+
+            {!hasAtLeastOneFilter ? (
+              <div className="mt-6 rounded-4xl border border-dashed border-slate-300 bg-white/70 px-5 py-6 text-sm text-slate-600">
+                Start by selecting a doctor, specialization, hospital, or date. Matching results will appear here automatically.
+              </div>
+            ) : filteredDoctors.length === 0 ? (
+              <div className="mt-6 rounded-4xl border border-dashed border-slate-300 bg-white/70 px-5 py-6 text-sm text-slate-600">
+                No matching doctors were found for the selected filters. Try changing one of the dropdown values.
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-4">
+                {filteredDoctors.map((doctor) => {
+                  const daySlots =
+                    selectedDate
+                      ? (selectedHospital
+                        ? findHospitalAvailability(doctor.hospitals, selectedHospital)?.availability ?? []
+                        : flattenHospitalAvailability(doctor.hospitals)
+                      )
+                        .filter((slot) => slot.day === getDayName(selectedDate) && slot.isAvailable)
+                        .flatMap((slot: AvailabilitySlot) => generateHalfHourSlots(slot.startTime, slot.endTime))
+                      : [];
+
+                  const bookedStarts = new Set(
+                    appointments
+                      .filter(
+                        (appointment) =>
+                          appointment.appointmentDate === selectedDate &&
+                          appointment.status === "booked" &&
+                          appointment.doctorName === doctor.name
+                      )
+                      .map((appointment) => appointment.appointmentTime)
+                  );
+
+                  const openSlots = daySlots.filter((slot) => !bookedStarts.has(slot));
+                  const isSelected = hasConfirmedDoctorSelection && selectedDoctorId === doctor._id;
+
+                  return (
+                    <article
+                      key={doctor._id}
+                      className={`rounded-3xl border px-5 py-5 transition ${isSelected ? "border-teal-700 bg-teal-50/80" : "border-slate-200 bg-white"
+                        }`}>
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="space-y-2">
+                          <h3 className="text-xl font-semibold text-slate-900">{doctor.name}</h3>
+                          <p className="text-sm text-slate-600">{doctor.specialization}</p>
+                          <p className="text-sm text-slate-600">
+                            {doctor.hospitals.map((hospital) => hospital.hospitalName == selectedHospital).join(", ") || "Hospital not assigned"}
+                          </p>
+                          <p className="text-sm text-slate-500">{doctor.phone || "Phone number not available"}</p>
+                        </div>
+
+                        <div className="flex flex-col items-start gap-3 lg:items-end">
+                          <button
+                            type="button"
+                            onClick={() => selectDoctorForBooking(doctor._id)}
+                            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${isSelected
+                              ? "bg-teal-700 text-white hover:bg-teal-800"
+                              : "border border-slate-300 bg-white text-slate-700 hover:border-teal-700 hover:text-teal-700"
+                              }`}>
+                            {isSelected ? "Selected for booking" : "Book with this doctor"}
+                          </button>
+                          {selectedDate ? (
+                            <span className="text-sm text-slate-600">
+                              {openSlots.length > 0 ? `${openSlots.length} slot(s) open on ${formatDateLabel(selectedDate)}` : "No open slots on selected date"}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-slate-600">Choose a Doctor to see open slots</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {selectedDate ? (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {openSlots.length > 0 ? (
+                            openSlots.map((slot) => (
+                              <span
+                                key={`${doctor._id}-${slot}`}
+                                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+                                {formatTime12(slot)}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-slate-500">No available time slots for this day.</span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {flattenHospitalAvailability(doctor.hospitals).some((slot) => slot.isAvailable) ? (
+                            flattenHospitalAvailability(doctor.hospitals)
+                              .filter((slot) => slot.isAvailable)
+                              .slice(0, 4)
+                              .map((slot) => (
+                                <span
+                                  key={`${doctor._id}-${slot.hospitalName}-${slot.day}-${slot.startTime}`}
+                                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+                                  {slot.hospitalName}: {slot.day} {formatTime12(slot.startTime)} - {formatTime12(slot.endTime)}
+                                </span>
+                              ))
+                          ) : (
+                            <span className="text-sm text-slate-500">Availability has not been added yet.</span>
+                          )}
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        ) : null}
+
+        {selectedDoctor && hasConfirmedDoctorSelection && selectedHospital ? (
           <section
             ref={suggestedSlotsRef}
-            className="rounded-4xl border border-(--line) bg-(--panel) px-6 py-6 shadow-[0_16px_48px_rgba(18,52,59,0.08)] sm:px-8"
-          >
+            className="rounded-4xl border border-(--line) bg-(--panel) px-6 py-6 shadow-[0_16px_48px_rgba(18,52,59,0.08)] sm:px-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">Suggested Slots</p>
@@ -698,9 +791,8 @@ export default function AppointmentsPage() {
                   return (
                     <article
                       key={`${slot.date}-${slot.recommendedTime}`}
-                      className={`rounded-3xl border px-5 py-5 transition ${
-                        isSelected ? "border-teal-700 bg-teal-50/80" : "border-slate-200 bg-white"
-                      }`}
+                      className={`rounded-3xl border px-5 py-5 transition ${isSelected ? "border-teal-700 bg-teal-50/80" : "border-slate-200 bg-white"
+                        }`}
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
@@ -738,7 +830,7 @@ export default function AppointmentsPage() {
           </section>
         ) : null}
 
-        {selectedDoctor ? (
+        {selectedDoctor && hasConfirmedDoctorSelection && selectedHospital ? (
           <section
             ref={slotResultsRef}
             className="rounded-4xl border border-(--line) bg-(--panel-strong) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)] sm:p-8"
@@ -816,8 +908,7 @@ export default function AppointmentsPage() {
         {selectedDate ? (
           <section
             ref={bookingSectionRef}
-            className="rounded-4xl border border-(--line) bg-(--panel) px-6 py-6 shadow-[0_16px_48px_rgba(18,52,59,0.08)] sm:px-8"
-          >
+            className="rounded-4xl border border-(--line) bg-(--panel) px-6 py-6 shadow-[0_16px_48px_rgba(18,52,59,0.08)] sm:px-8">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">Book Appointment</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Complete your booking</h2>
@@ -905,7 +996,7 @@ export default function AppointmentsPage() {
                   <select
                     required
                     value={selectedHospital}
-                    onChange={(event) => setSelectedHospital(event.target.value)}
+                    onChange={(event) => selectHospitalForBooking(event.target.value)}
                     className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700">
                     <option value="">Select hospital from results</option>
                     {availableHospitalOptions.map((hospitalName) => (

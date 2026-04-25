@@ -2,18 +2,39 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { generateHalfHourSlots, getDayName } from "@/lib/demo-data";
 import { requireAuth } from "@/lib/auth-guard";
+import { getSessionFromRequest } from "@/lib/auth";
 import { findHospitalAvailability } from "@/lib/doctor-schedule";
 import Appointment from "@/models/Appointment";
 import Doctor from "@/models/Doctor";
 
 export async function GET(request: Request) {
-  const auth = requireAuth(request, ["admin", "patient", "doctor"]);
-  if (auth.response) {
-    return auth.response;
-  }
-
   try {
     await connectDB();
+
+    const user = getSessionFromRequest(request);
+
+    if (!user) {
+      const appointments = await Appointment.find(
+        { status: "booked" },
+        {
+          doctorId: 1,
+          doctorName: 1,
+          hospitalName: 1,
+          appointmentDate: 1,
+          appointmentTime: 1,
+          status: 1,
+        }
+      )
+        .sort({ hospitalName: 1, appointmentDate: 1, appointmentTime: 1 })
+        .lean();
+
+      return NextResponse.json({ success: true, appointments, role: null });
+    }
+
+    const auth = requireAuth(request, ["admin", "patient", "doctor"]);
+    if (auth.response) {
+      return auth.response;
+    }
 
     let appointments;
     if (auth.user.role === "admin") {

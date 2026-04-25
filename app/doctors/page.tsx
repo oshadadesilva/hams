@@ -34,11 +34,11 @@ function formatTime12(time: string) {
   return `${normalizedHours}:${minutes.padStart(2, "0")} ${period}`;
 }
 
-const recentPatients = [
-  { id: "p1", name: "Emma Wilson", lastVisit: "2026-04-07", condition: "Hypertension" },
-  { id: "p2", name: "James Brown", lastVisit: "2026-03-28", condition: "Diabetes Type 2" },
-  { id: "p3", name: "Maria Garcia", lastVisit: "2026-04-10", condition: "Routine checkup" },
-];
+// const recentPatients = [
+//   { id: "p1", name: "Emma Wilson", lastVisit: "2026-04-07", condition: "Hypertension" },
+//   { id: "p2", name: "James Brown", lastVisit: "2026-03-28", condition: "Diabetes Type 2" },
+//   { id: "p3", name: "Maria Garcia", lastVisit: "2026-04-10", condition: "Routine checkup" },
+// ];
 
 export default function DoctorDashboard() {
   const router = useRouter();
@@ -276,7 +276,7 @@ export default function DoctorDashboard() {
             </article>
 
             {/* Recent Patients / EHR Access */}
-            <article className="rounded-4xl border border-(--line) bg-(--panel) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)]">
+            {/* <article className="rounded-4xl border border-(--line) bg-(--panel) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)]">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">Recent Patients</p>
                 <Link href="/doctor/dashboard/patients" className="text-xs font-medium text-teal-700 hover:underline">
@@ -297,7 +297,7 @@ export default function DoctorDashboard() {
                   </li>
                 ))}
               </ul>
-            </article>
+            </article> */}
           </div>
         </section>
       </div>
