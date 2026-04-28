@@ -66,6 +66,11 @@ export async function POST(request: Request) {
   //   return auth.response;
   // }
 
+/*export async function POST(request: Request) {
+  // Allow anonymous booking – no auth required
+  // const auth = requireAuth(request, ["admin", "patient"]);
+  // if (auth.response) return auth.response; */
+
   try {
     const body = await request.json();
     const {
