@@ -446,7 +446,7 @@ export default function AppointmentsPage() {
     setPendingScrollTarget(hospitalName ? "doctor-results" : null);
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!selectedDoctorId || !selectedDate || !appointmentTime) {
@@ -501,7 +501,7 @@ export default function AppointmentsPage() {
               <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Find and book an appointment</h1>
             </div>
             <Link href="/" className="text-sm font-semibold text-slate-600 hover:text-teal-700">
-              Back to dashboard
+              Back to Home
             </Link>
           </div>
 

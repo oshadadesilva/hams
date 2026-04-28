@@ -349,7 +349,7 @@ export default function DashboardPage() {
                             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{getTitle()}</h1>
                         </div>
                         <Link href="/" className="text-sm font-semibold text-slate-600 hover:text-teal-700">
-                            Back to home
+                            Back to Home
                         </Link>
                     </div>
                     <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">{getDescription()}</p>

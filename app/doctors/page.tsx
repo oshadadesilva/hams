@@ -208,7 +208,7 @@ export default function DoctorDashboard() {
           </article>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-[1.5fr_0.5fr]">
+        <section className="grid gap-6 lg">
           <article className="rounded-4xl border border-(--line) bg-(--panel-strong) p-8 shadow-[0_16px_48px_rgba(18,52,59,0.07)]">
             <div className="flex items-center justify-between">
               <div>
@@ -255,10 +255,10 @@ export default function DoctorDashboard() {
             </div>
           </article>
 
-          {/* Right Column: Availability & Recent Patients */}
+          {/* Right Column: Availability & Recent Patients
           <div className="flex flex-col gap-6">
             {/* Weekly Availability Card */}
-            <article className="rounded-4xl border border-(--line) bg-(--panel) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)]">
+            {/* <article className="rounded-4xl border border-(--line) bg-(--panel) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)]">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">My Availability</p>
                 <Link href="/doctors/availability" className="text-xs font-medium text-teal-700 hover:underline">
@@ -273,7 +273,7 @@ export default function DoctorDashboard() {
                   </li>
                 ))}
               </ul>
-            </article>
+            </article> */}
 
             {/* Recent Patients / EHR Access */}
             {/* <article className="rounded-4xl border border-(--line) bg-(--panel) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)]">
@@ -298,7 +298,6 @@ export default function DoctorDashboard() {
                 ))}
               </ul>
             </article> */}
-          </div>
         </section>
       </div>
     </main>
