@@ -28,6 +28,18 @@ export async function POST(request: Request) {
       );
     }
 
+    if (user.role === "doctor" && user.requiresPasswordReset) {
+      return NextResponse.json({
+        success: true,
+        requiresPasswordReset: true,
+        message: "Please reset your temporary password before continuing.",
+        user: {
+          email: user.email,
+          role: user.role,
+        },
+      });
+    }
+
     const token = createToken(toSessionUser(user));
 
     const response = NextResponse.json({

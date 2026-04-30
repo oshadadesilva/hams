@@ -268,6 +268,14 @@ export default function TopNav() {
                     className="block px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-teal-50 hover:text-teal-700 focus:bg-teal-50 focus:text-teal-700 focus:outline-none">
                     Settings
                   </Link>
+                  {user.role === "admin" ? (
+                    <Link
+                      href="/settings/doctor-accounts"
+                      onClick={() => setIsSettingsOpen(false)}
+                      className="block px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-teal-50 hover:text-teal-700 focus:bg-teal-50 focus:text-teal-700 focus:outline-none">
+                      Doctor Accounts
+                    </Link>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => {

@@ -1,8 +1,15 @@
+import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth-guard";
+import { hashPassword } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { normalizeHospitals, type DoctorHospitalLike } from "@/lib/doctor-schedule";
 import Doctor from "@/models/Doctor";
+import User from "@/models/User";
+
+function createTemporaryPassword() {
+  return randomBytes(9).toString("base64url");
+}
 
 export async function GET() {
   try {
@@ -35,11 +42,22 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, specialization, email, phone, hospitals = [], availability = [] } = body;
+    const { name, specialization, email, phone, temporaryPassword, password, hospitals = [], availability = [] } = body;
 
-    if (!name || !specialization || !email) {
+    if (!name || !specialization || !email || !phone) {
       return NextResponse.json(
-        { success: false, message: "Name, specialization, and email are required." },
+        { success: false, message: "Name, specialization, email, and phone are required." },
+        { status: 400 }
+      );
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const generatedPassword = !temporaryPassword && !password ? createTemporaryPassword() : "";
+    const doctorPassword = String(temporaryPassword || password || generatedPassword);
+
+    if (doctorPassword.length < 8) {
+      return NextResponse.json(
+        { success: false, message: "Temporary password must contain at least 8 characters." },
         { status: 400 }
       );
     }
@@ -58,7 +76,11 @@ export async function POST(request: Request) {
 
     await connectDB();
 
-    const existingDoctor = await Doctor.findOne({ email: String(email).toLowerCase() });
+    const [existingDoctor, existingUser] = await Promise.all([
+      Doctor.findOne({ email: normalizedEmail }),
+      User.findOne({ email: normalizedEmail }),
+    ]);
+
     if (existingDoctor) {
       return NextResponse.json(
         { success: false, message: "A doctor with this email already exists." },
@@ -66,15 +88,43 @@ export async function POST(request: Request) {
       );
     }
 
+    if (existingUser) {
+      return NextResponse.json(
+        { success: false, message: "A login account with this email already exists." },
+        { status: 409 }
+      );
+    }
+
     const doctor = await Doctor.create({
       name,
       specialization,
-      email,
+      email: normalizedEmail,
       phone,
       hospitals: normalizedHospitals,
     });
 
-    return NextResponse.json({ success: true, doctor }, { status: 201 });
+    const user = await User.create({
+      name,
+      email: normalizedEmail,
+      passwordHash: hashPassword(doctorPassword),
+      phone,
+      role: "doctor",
+      requiresPasswordReset: true,
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        doctor,
+        account: {
+          id: user._id.toString(),
+          email: user.email,
+          temporaryPassword: generatedPassword || undefined,
+          requiresPasswordReset: true,
+        },
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Failed to create doctor", error);
     return NextResponse.json(

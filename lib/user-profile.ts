@@ -32,6 +32,7 @@ type UserLike = {
   autoApproveAppointments?: boolean;
   showDoctorDirectory?: boolean;
   systemAlertEmail?: string;
+  requiresPasswordReset?: boolean;
 };
 
 export type UserProfile = {
@@ -65,6 +66,7 @@ export type UserProfile = {
   autoApproveAppointments: boolean;
   showDoctorDirectory: boolean;
   systemAlertEmail: string;
+  requiresPasswordReset: boolean;
 };
 
 function toValue(value: unknown) {
@@ -117,5 +119,6 @@ export function serializeUserProfile(user: UserLike): UserProfile {
     autoApproveAppointments: toBoolean(user.autoApproveAppointments, false),
     showDoctorDirectory: toBoolean(user.showDoctorDirectory, true),
     systemAlertEmail: toValue(user.systemAlertEmail),
+    requiresPasswordReset: toBoolean(user.requiresPasswordReset, false),
   };
 }

@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useToast } from "@/components/ToastProvider";
 
-type Role = "admin" | "patient" | "doctor";
-
 export default function SignInPage() {
   const router = useRouter();
   const toast = useToast();
@@ -15,7 +13,6 @@ export default function SignInPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState<Role>("patient");
   const [isSubmitting, setIsSubmitting] = useState(false);
   // --- New Patient Fields ---
   const [country, setCountry] = useState("Sri Lanka");
@@ -32,8 +29,8 @@ export default function SignInPage() {
   async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters long");
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters long");
       return;
     }
 
@@ -48,13 +45,12 @@ export default function SignInPage() {
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        //body: JSON.stringify({ name, email, phone, password, role }),
         body: JSON.stringify({
           name,
           email,
           phone,
           password,
-          role,
+          role: "patient",
           title,
           country,
           nic,
@@ -123,19 +119,19 @@ export default function SignInPage() {
                 <input
                   required
                   autoComplete="off"
-                  minLength={6}
+                  minLength={8}
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700"
-                  placeholder="Minimum 6 characters"
+                  placeholder="Minimum 8 characters"
                 />
               </label>
               <label className="grid gap-2 text-sm font-medium text-slate-700">
                 Confirm Password *
                 <input
                   required
-                  minLength={6}
+                  minLength={8}
                   autoComplete="off"
                   type="password"
                   value={confirmPassword}
@@ -145,17 +141,6 @@ export default function SignInPage() {
                 />
               </label>
             </div>
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Role
-              <select
-                value={role}
-                onChange={(event) => setRole(event.target.value as Role)}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700">
-                <option value="patient">Patient</option>
-                <option value="doctor">Doctor</option>
-                <option value="admin">Admin</option>
-              </select>
-            </label>
             <br />
           </div>
 

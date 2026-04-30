@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { ArrowBigRightDash } from "lucide-react";
 
 const carouselSlides = [
   {
@@ -38,13 +39,13 @@ export default function Home() {
       <div className="max-w-6xl mx-auto px-6 py-12 lg:py-16">
         {/* Hero section */}
         <div className="text-center mb-16">
-          <p className="text-sm font-medium uppercase tracking-[0.32em] text-teal-600">
+          <h1 className="text-3xl md:text-4xl lg:text-6xl font-bold uppercase tracking-[0.12em] text-teal-600">
             Healthcare Appointment Management System
-          </p>
-          <h1 className="mt-4 text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900">
+          </h1>
+          <h4 className="mt-4 text-1xl md:text-2xl lg:text-4xl font-bold tracking-tight text-slate-900">
             HAMS turns appointment booking and doctor scheduling <br className="hidden md:block" />
             into one connected workflow.
-          </h1>
+          </h4>
           {/* <p className="mt-6 text-lg text-slate-600 max-w-2xl mx-auto">
             Built with Next.js, Node.js route handlers, MongoDB, and Mongoose – this starter gives you the
             frontend, backend logic, and database integration in one place.
@@ -54,9 +55,9 @@ export default function Home() {
           <div className="mt-10">
             <Link
               href="/appointments"
-              className="group relative inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-teal-600 rounded-full shadow-lg hover:bg-teal-700 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+              className="group relative inline-flex items-center gap-2 px-8 py-4 text-1xl md:text-2xl lg:text-4xl font-semibold text-white bg-teal-600 rounded-full shadow-lg hover:bg-teal-700 transition-all duration-300 hover:scale-105 hover:shadow-xl"
             >
-              <span>📋 Make an Appointment</span>
+              <span>📋 Make an Appointment</span><ArrowBigRightDash />
               <svg
                 className="w-5 h-5 transition-transform group-hover:translate-x-1"
                 fill="none"

@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { AUTH_COOKIE_NAME, createToken, hashPassword, type UserRole } from "@/lib/auth";
+import { AUTH_COOKIE_NAME, createToken, hashPassword } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { serializeUserProfile, toSessionUser } from "@/lib/user-profile";
 import User from "@/models/User";
-
-const allowedRoles: Set<UserRole> = new Set(["admin", "patient", "doctor"]);
 
 export async function POST(request: Request) {
   try {
@@ -38,8 +36,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!allowedRoles.has(role)) {
-      return NextResponse.json({ success: false, message: "Invalid role selected." }, { status: 400 });
+    if (role !== "patient") {
+      return NextResponse.json(
+        { success: false, message: "Only patient self-registration is allowed. Doctor accounts must be created by an admin." },
+        { status: 403 }
+      );
     }
 
     if (String(password).length < 8) {

@@ -9,8 +9,25 @@ import { findHospitalAvailability, flattenHospitalAvailability } from "@/lib/doc
 
 type AvailabilitySlot = DoctorSeed["hospitals"][number]["availability"][number];
 type DoctorRecord = DoctorSeed;
+type ApiAvailableSlot = {
+  time: string;
+  bookedAppointmentsCount: number;
+  appointmentNumber: number;
+  isAvailable: boolean;
+};
+type ApiAvailableSlotDay = {
+  date: string;
+  dayName: string;
+  hospitalName: string;
+  slots: ApiAvailableSlot[];
+};
+type ApiAvailableSlotsResponse = {
+  success: boolean;
+  message?: string;
+  days?: ApiAvailableSlotDay[];
+};
 
-const upcomingDateOptions = Array.from({ length: 14 }, (_, index) => {
+const upcomingDateOptions = Array.from({ length: 7 }, (_, index) => {
   const date = new Date();
   date.setDate(date.getDate() + index);
   return date.toISOString().split("T")[0];
@@ -78,6 +95,10 @@ export default function AppointmentsPage() {
   const [patientPhone, setPatientPhone] = useState("");
   const [reason, setReason] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [availableSlotDays, setAvailableSlotDays] = useState<ApiAvailableSlotDay[]>([]);
+  const [isLoadingAvailableSlots, setIsLoadingAvailableSlots] = useState(false);
+  const [availableSlotsError, setAvailableSlotsError] = useState("");
+  const [availabilityRefreshKey, setAvailabilityRefreshKey] = useState(0);
   const [pendingScrollTarget, setPendingScrollTarget] = useState<"doctor-results" | "hospital-selection" | "suggested-slots" | null>(null);
 
   useEffect(() => {
@@ -225,120 +246,126 @@ export default function AppointmentsPage() {
     ];
   }, [filteredDoctors, selectedDoctor]);
 
-  const availableSlots = useMemo(() => {
-    if (!selectedDoctor || !selectedDate || !selectedHospital) {
+  useEffect(() => {
+    if (!selectedDoctorId || !selectedHospital) {
+      setAvailableSlotDays([]);
+      setAvailableSlotsError("");
+      setIsLoadingAvailableSlots(false);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const loadAvailableSlots = async () => {
+      setIsLoadingAvailableSlots(true);
+      setAvailableSlotsError("");
+
+      try {
+        const params = new URLSearchParams({
+          doctorId: selectedDoctorId,
+          hospitalName: selectedHospital,
+        });
+        const response = await fetch(`/api/appointments/available-slots?${params.toString()}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const data = (await response.json()) as ApiAvailableSlotsResponse;
+
+        if (response.ok && data.success) {
+          setAvailableSlotDays(data.days ?? []);
+          return;
+        }
+
+        const message = data.message ?? "Failed to load available appointment slots.";
+        setAvailableSlotDays([]);
+        setAvailableSlotsError(message);
+        toast.error(message);
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        console.error(error);
+        const message = "Failed to load available appointment slots.";
+        setAvailableSlotDays([]);
+        setAvailableSlotsError(message);
+        toast.error(message);
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingAvailableSlots(false);
+        }
+      }
+    };
+
+    void loadAvailableSlots();
+
+    return () => {
+      controller.abort();
+    };
+  }, [availabilityRefreshKey, selectedDoctorId, selectedHospital, toast]);
+
+  const selectedAvailabilityDay = useMemo(
+    () => availableSlotDays.find((entry) => entry.date === selectedDate) ?? null,
+    [availableSlotDays, selectedDate]
+  );
+
+  const availableTimeSlots = useMemo(
+    () => selectedAvailabilityDay?.slots.filter((slot) => slot.isAvailable) ?? [],
+    [selectedAvailabilityDay]
+  );
+
+  const availableSlots = useMemo(
+    () => availableTimeSlots.map((slot) => slot.time),
+    [availableTimeSlots]
+  );
+
+  const selectedAppointmentSlot = useMemo(
+    () => selectedAvailabilityDay?.slots.find((slot) => slot.time === appointmentTime) ?? null,
+    [appointmentTime, selectedAvailabilityDay]
+  );
+
+  const nextWeekAvailability = useMemo(() => {
+    if (!selectedDoctor || !selectedHospital) {
       return [];
     }
 
-    const dayName = getDayName(selectedDate);
-    const bookedStarts = new Set(
-      appointments
-        .filter(
-          (appointment) =>
-            appointment.appointmentDate === selectedDate &&
-            appointment.status === "booked" &&
-            appointment.doctorName === selectedDoctor.name
-        )
-        .map((appointment) => appointment.appointmentTime)
-    );
-
-    const hospitalSchedule = findHospitalAvailability(selectedDoctor.hospitals, selectedHospital);
-
-    return (hospitalSchedule?.availability ?? [])
-      .filter((slot) => slot.day === dayName && slot.isAvailable)
-      .flatMap((slot: AvailabilitySlot) => generateHalfHourSlots(slot.startTime, slot.endTime))
-      .filter((slot) => !bookedStarts.has(slot));
-  }, [appointments, selectedDate, selectedDoctor, selectedHospital]);
-
-  const nextTwoWeekAvailability = useMemo(() => {
-    if (!selectedDoctor) {
-      return [];
-    }
-
-    const hospitalSources = selectedHospital
-      ? selectedDoctor.hospitals.filter((hospital) => hospital.hospitalName === selectedHospital)
-      : selectedDoctor.hospitals;
-
-    return hospitalSources.flatMap((hospital) =>
-      upcomingDateOptions
-        .map((date) => {
-          const dayName = getDayName(date);
-          const bookedStarts = new Set(
-            appointments
-              .filter(
-                (appointment) =>
-                  appointment.appointmentDate === date &&
-                  appointment.status === "booked" &&
-                  appointment.doctorName === selectedDoctor.name &&
-                  appointment.hospitalName === hospital.hospitalName
-              )
-              .map((appointment) => appointment.appointmentTime)
-          );
-
-          const slots = hospital.availability
-            .filter((slot) => slot.day === dayName && slot.isAvailable)
-            .flatMap((slot: AvailabilitySlot) => generateHalfHourSlots(slot.startTime, slot.endTime))
-            .filter((slot) => !bookedStarts.has(slot));
-
-          return {
-            date,
-            label: formatDateLabel(date),
-            hospitalName: hospital.hospitalName,
-            slots,
-          };
-        })
-        .filter((entry) => entry.slots.length > 0)
-    );
-  }, [appointments, selectedDoctor, selectedHospital]);
+    return availableSlotDays
+      .map((entry) => ({
+        date: entry.date,
+        label: formatDateLabel(entry.date),
+        hospitalName: entry.hospitalName,
+        slots: entry.slots,
+        openSlotsCount: entry.slots.filter((slot) => slot.isAvailable).length,
+      }))
+      .filter((entry) => entry.slots.length > 0);
+  }, [availableSlotDays, selectedDoctor, selectedHospital]);
 
   const suggestedSlots = useMemo(() => {
     if (!selectedDoctor || !selectedHospital) {
       return [];
     }
 
-    const hospital = selectedDoctor.hospitals.find(
-      (entry) => entry.hospitalName === selectedHospital
-    );
-
-    if (!hospital) {
-      return [];
-    }
-
-    return upcomingDateOptions
-      .map((date) => {
-        const dayName = getDayName(date);
-        const bookedStarts = new Set(
-          appointments
-            .filter(
-              (appointment) =>
-                appointment.appointmentDate === date &&
-                appointment.status === "booked" &&
-                appointment.doctorName === selectedDoctor.name &&
-                appointment.hospitalName === selectedHospital
-            )
-            .map((appointment) => appointment.appointmentTime)
-        );
-
-        const openSlots = hospital.availability
-          .filter((slot) => slot.day === dayName && slot.isAvailable)
-          .flatMap((slot: AvailabilitySlot) => generateHalfHourSlots(slot.startTime, slot.endTime))
-          .filter((slot) => !bookedStarts.has(slot));
+    return availableSlotDays
+      .map((entry) => {
+        const openSlots = entry.slots.filter((slot) => slot.isAvailable);
 
         if (openSlots.length === 0) {
           return null;
         }
 
-        const recommendedTime =
-          openSlots.find((slot) => isMorningTime(slot)) ?? openSlots[0];
+        const recommendedSlot =
+          openSlots.find((slot) => isMorningTime(slot.time)) ?? openSlots[0];
+
 
         return {
-          date,
-          label: formatDateLabel(date),
-          recommendedTime,
+          date: entry.date,
+          label: formatDateLabel(entry.date),
+          recommendedTime: recommendedSlot.time,
           openSlotsCount: openSlots.length,
-          isWeekend: isWeekendDate(date),
-          isMorning: isMorningTime(recommendedTime),
-          appointmentNumber: openSlots.indexOf(recommendedTime) + 1,
+          bookedAppointmentsCount: recommendedSlot.bookedAppointmentsCount,
+          isWeekend: isWeekendDate(entry.date),
+          isMorning: isMorningTime(recommendedSlot.time),
+          appointmentNumber: recommendedSlot.appointmentNumber,
         };
       })
       .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
@@ -362,7 +389,7 @@ export default function AppointmentsPage() {
         return a.recommendedTime.localeCompare(b.recommendedTime);
       })
       .slice(0, 5);
-  }, [appointments, selectedDoctor, selectedHospital]);
+  }, [availableSlotDays, selectedDoctor, selectedHospital]);
 
   useEffect(() => {
     setAppointmentTime((current) => (availableSlots.includes(current) ? current : availableSlots[0] ?? ""));
@@ -375,7 +402,7 @@ export default function AppointmentsPage() {
       return;
     }
 
-    window.requestAnimationFrame(() => {
+    globalThis.requestAnimationFrame(() => {
       if (pendingScrollTarget === "doctor-results") {
         doctorResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }
@@ -480,6 +507,7 @@ export default function AppointmentsPage() {
       }
 
       setAppointments((current) => [data.appointment, ...current]);
+      setAvailabilityRefreshKey((current) => current + 1);
       toast.success("Appointment booked successfully.");
       setReason("");
     } catch (error) {
@@ -769,17 +797,25 @@ export default function AppointmentsPage() {
                   Best recommended date and time options
                 </h2>
                 <p className="mt-2 text-sm text-slate-600">
-                  Ranked by more open slots first, then weekends, then morning sessions.
+                  Ranked from API slot counts by more open slots first, then weekends, then morning sessions.
                 </p>
               </div>
-              <span className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
-                {selectedDoctor.name} at {selectedHospital}
+              <span className="rounded-full border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-800">
+                Selected: {selectedDoctor.name} at {selectedHospital}
               </span>
             </div>
 
-            {suggestedSlots.length === 0 ? (
+            {isLoadingAvailableSlots ? (
               <div className="mt-6 rounded-4xl border border-dashed border-slate-300 bg-white/70 px-5 py-6 text-sm text-slate-600">
-                No suggested slots are available for this doctor and hospital in the next 2 weeks.
+                Loading available slots...
+              </div>
+            ) : availableSlotsError ? (
+              <div className="mt-6 rounded-4xl border border-dashed border-rose-200 bg-rose-50 px-5 py-6 text-sm text-rose-700">
+                {availableSlotsError}
+              </div>
+            ) : suggestedSlots.length === 0 ? (
+              <div className="mt-6 rounded-4xl border border-dashed border-slate-300 bg-white/70 px-5 py-6 text-sm text-slate-600">
+                No suggested slots are available for this doctor and hospital in the next 7 days.
               </div>
             ) : (
               <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -792,8 +828,7 @@ export default function AppointmentsPage() {
                     <article
                       key={`${slot.date}-${slot.recommendedTime}`}
                       className={`rounded-3xl border px-5 py-5 transition ${isSelected ? "border-teal-700 bg-teal-50/80" : "border-slate-200 bg-white"
-                        }`}
-                    >
+                        }`}>
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                           <h3 className="text-lg font-semibold text-slate-900">{slot.label}</h3>
@@ -807,9 +842,11 @@ export default function AppointmentsPage() {
                       </div>
 
                       <div className="mt-4 space-y-1 text-sm text-slate-600">
+                        <p>{slot.isMorning ? "Morning session" : "Evening session"}</p>
                         <p>{slot.openSlotsCount} open slot(s) on this day</p>
-                        <p>Suggested appointment no. {slot.appointmentNumber}</p>
-                        <p>{slot.isMorning ? "Morning session" : "Later session"}</p>
+                        {/* <p><b>Suggested appointment no. {slot.appointmentNumber}</b></p> */}
+                        {/* <p>{slot.bookedAppointmentsCount} booked appointment(s) for this time</p> */}
+
                       </div>
 
                       <button
@@ -818,8 +855,7 @@ export default function AppointmentsPage() {
                           setSelectedDate(slot.date);
                           setAppointmentTime(slot.recommendedTime);
                         }}
-                        className="mt-5 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-700 hover:text-teal-700"
-                      >
+                        className="mt-5 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-700 hover:text-teal-700">
                         Choose suggestion
                       </button>
                     </article>
@@ -833,8 +869,7 @@ export default function AppointmentsPage() {
         {selectedDoctor && hasConfirmedDoctorSelection && selectedHospital ? (
           <section
             ref={slotResultsRef}
-            className="rounded-4xl border border-(--line) bg-(--panel-strong) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)] sm:p-8"
-          >
+            className="rounded-4xl border border-(--line) bg-(--panel-strong) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)] sm:p-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium uppercase tracking-[0.28em] text-amber-600">Slot Results</p>
@@ -852,19 +887,29 @@ export default function AppointmentsPage() {
               ) : null}
             </div>
 
-            {nextTwoWeekAvailability.length === 0 ? (
+            {isLoadingAvailableSlots ? (
               <div className="mt-6 rounded-4xl border border-dashed border-slate-300 bg-white/70 px-5 py-6 text-sm text-slate-600">
-                This doctor does not have any open slots in the next 2 weeks.
+                Loading available slots...
+              </div>
+            ) : availableSlotsError ? (
+              <div className="mt-6 rounded-4xl border border-dashed border-rose-200 bg-rose-50 px-5 py-6 text-sm text-rose-700">
+                {availableSlotsError}
+              </div>
+            ) : nextWeekAvailability.length === 0 ? (
+              <div className="mt-6 rounded-4xl border border-dashed border-slate-300 bg-white/70 px-5 py-6 text-sm text-slate-600">
+                This doctor does not have any scheduled slots in the next 7 days.
               </div>
             ) : (
               <div className="mt-6 grid gap-4">
-                {nextTwoWeekAvailability.map((entry) => (
+                {nextWeekAvailability.map((entry) => (
                   <article key={`${entry.hospitalName}-${entry.date}`} className="rounded-4xl border px-5 py-5 transition border-slate-200 bg-white">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <h3 className="text-lg font-semibold text-slate-900">{entry.label}</h3>
                         <p className="text-sm text-slate-600">{entry.hospitalName}</p>
-                        <p className="text-sm text-slate-600">{entry.slots.length} available slot(s)</p>
+                        <p className="text-sm text-slate-600">
+                          {entry.openSlotsCount} open of {entry.slots.length} scheduled slot(s)
+                        </p>
                       </div>
                       {selectedDate === entry.date && selectedHospital === entry.hospitalName ? (
                         <span className="rounded-3xl border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800">
@@ -878,22 +923,32 @@ export default function AppointmentsPage() {
                         const isSelected =
                           selectedDate === entry.date &&
                           selectedHospital === entry.hospitalName &&
-                          appointmentTime === slot;
+                          appointmentTime === slot.time;
 
                         return (
                           <button
-                            key={`${entry.hospitalName}-${entry.date}-${slot}`}
+                            key={`${entry.hospitalName}-${entry.date}-${slot.time}`}
                             type="button"
+                            disabled={!slot.isAvailable}
                             onClick={() => {
+                              if (!slot.isAvailable) {
+                                return;
+                              }
+
                               setSelectedHospital(entry.hospitalName);
                               setSelectedDate(entry.date);
-                              setAppointmentTime(slot);
+                              setAppointmentTime(slot.time);
                             }}
-                            className={`rounded-3xl px-4 py-2 text-sm font-semibold transition ${isSelected
+                            className={`rounded-3xl px-4 py-2 text-left text-sm font-semibold transition ${isSelected
                               ? "bg-teal-700 text-white hover:bg-teal-800"
-                              : "border border-slate-300 bg-white text-slate-700 hover:border-teal-700 hover:text-teal-700 article-border"
+                              : slot.isAvailable
+                                ? "border border-slate-300 bg-white text-slate-700 hover:border-teal-700 hover:text-teal-700 article-border"
+                                : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
                               }`}>
-                            {formatTime12(slot)}
+                            <span className="block">{formatTime12(slot.time)}</span>
+                            {/* <span className="block text-xs font-medium">
+                              No. {slot.appointmentNumber} - {slot.bookedAppointmentsCount} booked
+                            </span> */}
                           </button>
                         );
                       })}
@@ -912,6 +967,11 @@ export default function AppointmentsPage() {
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">Book Appointment</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Complete your booking</h2>
+              {selectedAppointmentSlot ? (
+                <p className="mt-2 text-sm font-semibold text-teal-800">
+                  {selectedHospital} - {selectedDoctor ? selectedDoctor.name : 'N/A'} - {formatDateLabel(selectedDate)} at {formatTime12(appointmentTime)}
+                </p>
+              ) : null}
             </div>
 
             <form onSubmit={handleSubmit} className="mt-6">
@@ -1013,10 +1073,10 @@ export default function AppointmentsPage() {
                     value={appointmentTime}
                     onChange={(event) => setAppointmentTime(event.target.value)}
                     className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700">
-                    {availableSlots.length > 0 ? (
-                      availableSlots.map((slot) => (
-                        <option key={slot} value={slot}>
-                          {formatTime12(slot)}
+                    {availableTimeSlots.length > 0 ? (
+                      availableTimeSlots.map((slot) => (
+                        <option key={slot.time} value={slot.time}>
+                          {formatTime12(slot.time)}
                         </option>
                       ))
                     ) : (
@@ -1039,12 +1099,12 @@ export default function AppointmentsPage() {
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-sm text-slate-600">
                   {selectedDoctor
-                    ? `${selectedDoctor.name} - ${selectedDoctor.specialization} - ${getHospitalName(selectedDoctor)}`
+                    ? `${selectedDoctor.name} - ${selectedDoctor.specialization} - ${selectedHospital || getHospitalName(selectedDoctor)}`
                     : "Choose at least one filter and select a result to continue booking."}
                 </div>
                 <button
                   type="submit"
-                  disabled={isSaving || !selectedDoctorId || !selectedDate || availableSlots.length === 0}
+                  disabled={isSaving || !selectedDoctorId || !selectedDate || !selectedAppointmentSlot?.isAvailable}
                   className="rounded-full bg-teal-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400">
                   {isSaving ? "Booking..." : "Book appointment"}
                 </button>

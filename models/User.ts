@@ -31,6 +31,7 @@ const userSchema = new Schema(
     autoApproveAppointments: { type: Boolean, default: false },
     showDoctorDirectory: { type: Boolean, default: true },
     systemAlertEmail: { type: String, trim: true, default: "" },
+    requiresPasswordReset: { type: Boolean, default: false },
     role: {
       type: String,
       enum: ["admin", "patient", "doctor"],
@@ -43,7 +44,7 @@ const userSchema = new Schema(
 
 export type UserDocument = InferSchemaType<typeof userSchema>;
 
-if (models.User && !models.User.schema.path("title")) {
+if (models.User && (!models.User.schema.path("title") || !models.User.schema.path("requiresPasswordReset"))) {
   deleteModel("User");
 }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ToastProvider";
@@ -298,6 +299,12 @@ export default function SettingsPage() {
                     checked={form.showDoctorDirectory}
                     onChange={(checked) => updateField("showDoctorDirectory", checked)}
                   />
+                  <Link
+                    href="/settings/doctor-accounts"
+                    className="rounded-3xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-900 transition hover:border-teal-700 hover:text-teal-700"
+                  >
+                    Create doctor login accounts
+                  </Link>
                 </div>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
                   System alert email
