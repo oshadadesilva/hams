@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "@/components/ThemeProvider";
 import { useToast } from "@/components/ToastProvider";
 import ToggleCard from "@/components/ToggleCard";
-import { SettingsFormData } from "@/lib/auth-shared";
+import { SettingsFormData, type ThemePreference } from "@/lib/auth-shared";
+
+const themePreferences = ["system", "light", "dark"] as const;
 
 const defaultSettings: SettingsFormData = {
   role: "patient",
@@ -22,9 +25,14 @@ const defaultSettings: SettingsFormData = {
   systemAlertEmail: "",
 };
 
+function toThemePreference(value: unknown): ThemePreference {
+  return themePreferences.includes(value as ThemePreference) ? (value as ThemePreference) : "system";
+}
+
 export default function SettingsPage() {
   const router = useRouter();
   const toast = useToast();
+  const { setThemePreference } = useTheme();
   const [form, setForm] = useState<SettingsFormData>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -45,10 +53,13 @@ export default function SettingsPage() {
           return;
         }
 
+        const loadedThemePreference = toThemePreference(data.user.themePreference);
+        setThemePreference(loadedThemePreference);
+
         setForm({
           role: data.user.role ?? "patient",
           preferredLanguage: data.user.preferredLanguage ?? "English",
-          themePreference: data.user.themePreference ?? "system",
+          themePreference: loadedThemePreference,
           emailNotifications: data.user.emailNotifications ?? true,
           smsNotifications: data.user.smsNotifications ?? false,
           appointmentReminders: data.user.appointmentReminders ?? true,
@@ -68,7 +79,7 @@ export default function SettingsPage() {
     }
 
     void loadSettings();
-  }, [router, toast]);
+  }, [router, setThemePreference, toast]);
 
   function updateField<Key extends keyof SettingsFormData>(field: Key, value: SettingsFormData[Key]) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -91,10 +102,13 @@ export default function SettingsPage() {
         return;
       }
 
+      const savedThemePreference = toThemePreference(data.user.themePreference);
+      setThemePreference(savedThemePreference);
+
       setForm({
         role: data.user.role ?? "patient",
         preferredLanguage: data.user.preferredLanguage ?? "English",
-        themePreference: data.user.themePreference ?? "system",
+        themePreference: savedThemePreference,
         emailNotifications: data.user.emailNotifications ?? true,
         smsNotifications: data.user.smsNotifications ?? false,
         appointmentReminders: data.user.appointmentReminders ?? true,
@@ -119,7 +133,7 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <main className="px-6 py-10 sm:px-10 lg:px-16">
-        <div className="mx-auto max-w-5xl rounded-4xl border border-(--line) bg-(--panel-strong) p-8 text-sm text-slate-600 shadow-[0_18px_55px_rgba(18,52,59,0.08)]">
+        <div className="mx-auto max-w-5xl rounded-4xl border border-(--line) bg-(--panel-strong) p-8 text-sm text-(--muted) shadow-[0_18px_55px_var(--shadow-soft)]">
           Loading your settings...
         </div>
       </main>
@@ -129,16 +143,16 @@ export default function SettingsPage() {
   return (
     <main className="px-6 py-10 sm:px-10 lg:px-16">
       <div className="mx-auto grid max-w-5xl gap-8">
-        <section className="rounded-4xl border border-(--line) bg-(--panel-strong) p-8 shadow-[0_18px_55px_rgba(18,52,59,0.08)]">
+        <section className="rounded-4xl border border-(--line) bg-(--panel-strong) p-8 shadow-[0_18px_55px_var(--shadow-soft)]">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-sm font-medium uppercase tracking-[0.28em] text-amber-600">Settings</p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">Account and system preferences</h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+              <p className="text-sm font-medium uppercase tracking-[0.28em] text-(--accent-2)">Settings</p>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">Account and system preferences</h1>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-(--muted)">
                 Adjust your notifications, privacy, and interface preferences. Admin accounts also get organization-wide controls.
               </p>
             </div>
-            <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold capitalize text-slate-700">
+            <div className="rounded-full border border-(--line) bg-(--field) px-4 py-2 text-sm font-semibold capitalize text-(--muted)">
               {form.role} settings
             </div>
           </div>
@@ -146,31 +160,35 @@ export default function SettingsPage() {
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-4xl border border-(--line) bg-(--panel-strong) p-8 shadow-[0_18px_55px_rgba(18,52,59,0.08)]">
+          className="rounded-4xl border border-(--line) bg-(--panel-strong) p-8 shadow-[0_18px_55px_var(--shadow-soft)]">
           <div className="grid gap-8">
             <section className="grid gap-5">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">General preferences</h2>
-                <p className="mt-1 text-sm text-slate-600">Choose how the app looks and which language you prefer while using HAMS.</p>
+                <h2 className="text-xl font-semibold text-foreground">General preferences</h2>
+                <p className="mt-1 text-sm text-(--muted)">Choose how the app looks and which language you prefer while using HAMS.</p>
               </div>
               <div className="grid gap-5 md:grid-cols-2">
-                <label className="grid gap-2 text-sm font-medium text-slate-700">
+                <label className="grid gap-2 text-sm font-medium text-(--muted)">
                   Preferred language
                   <select
                     value={form.preferredLanguage}
                     onChange={(event) => updateField("preferredLanguage", event.target.value)}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700">
+                    className="rounded-2xl border border-(--line) bg-(--field) px-4 py-3 text-foreground outline-none transition focus:border-(--accent)">
                     <option value="English">English</option>
                     <option value="Sinhala">Sinhala</option>
                     <option value="Tamil">Tamil</option>
                   </select>
                 </label>
-                <label className="grid gap-2 text-sm font-medium text-slate-700">
+                <label className="grid gap-2 text-sm font-medium text-(--muted)">
                   Theme preference
                   <select
                     value={form.themePreference}
-                    onChange={(event) => updateField("themePreference", event.target.value)}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700">
+                    onChange={(event) => {
+                      const nextThemePreference = toThemePreference(event.target.value);
+                      updateField("themePreference", nextThemePreference);
+                      setThemePreference(nextThemePreference);
+                    }}
+                    className="rounded-2xl border border-(--line) bg-(--field) px-4 py-3 text-foreground outline-none transition focus:border-(--accent)">
                     <option value="system">System default</option>
                     <option value="light">Light</option>
                     <option value="dark">Dark</option>
@@ -179,10 +197,10 @@ export default function SettingsPage() {
               </div>
             </section>
 
-            <section className="grid gap-5 border-t border-slate-200 pt-8">
+            <section className="grid gap-5 border-t border-(--line) pt-8">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">Notification settings</h2>
-                <p className="mt-1 text-sm text-slate-600">Control which updates are sent to you and how HAMS contacts you.</p>
+                <h2 className="text-xl font-semibold text-foreground">Notification settings</h2>
+                <p className="mt-1 text-sm text-(--muted)">Control which updates are sent to you and how HAMS contacts you.</p>
               </div>
               <div className="grid gap-4">
                 <ToggleCard
@@ -212,10 +230,10 @@ export default function SettingsPage() {
               </div>
             </section>
 
-            <section className="grid gap-5 border-t border-slate-200 pt-8">
+            <section className="grid gap-5 border-t border-(--line) pt-8">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">Privacy controls</h2>
-                <p className="mt-1 text-sm text-slate-600">Manage how your medical information is surfaced inside the application.</p>
+                <h2 className="text-xl font-semibold text-foreground">Privacy controls</h2>
+                <p className="mt-1 text-sm text-(--muted)">Manage how your medical information is surfaced inside the application.</p>
               </div>
               <div className="grid gap-4">
                 <ToggleCard
@@ -228,10 +246,10 @@ export default function SettingsPage() {
             </section>
 
             {form.role === "admin" ? (
-              <section className="grid gap-5 border-t border-slate-200 pt-8">
+              <section className="grid gap-5 border-t border-(--line) pt-8">
                 <div>
-                  <h2 className="text-xl font-semibold text-slate-900">Admin controls</h2>
-                  <p className="mt-1 text-sm text-slate-600">These controls affect how users and staff interact with the wider system.</p>
+                  <h2 className="text-xl font-semibold text-foreground">Admin controls</h2>
+                  <p className="mt-1 text-sm text-(--muted)">These controls affect how users and staff interact with the wider system.</p>
                 </div>
                 <div className="grid gap-4">
                   <ToggleCard
@@ -254,17 +272,17 @@ export default function SettingsPage() {
                   />
                   <Link
                     href="/settings/doctor-accounts"
-                    className="rounded-3xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-900 transition hover:border-teal-700 hover:text-teal-700">
+                    className="rounded-3xl border border-(--line) bg-(--field) px-5 py-4 text-sm font-semibold text-foreground transition hover:border-(--accent) hover:text-(--accent)">
                     Create doctor login accounts
                   </Link>
                 </div>
-                <label className="grid gap-2 text-sm font-medium text-slate-700">
+                <label className="grid gap-2 text-sm font-medium text-(--muted)">
                   System alert email
                   <input
                     type="email"
                     value={form.systemAlertEmail}
                     onChange={(event) => updateField("systemAlertEmail", event.target.value)}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700"
+                    className="rounded-2xl border border-(--line) bg-(--field) px-4 py-3 text-foreground outline-none transition focus:border-(--accent)"
                     placeholder="admin@hospital.com"
                   />
                 </label>
@@ -272,14 +290,14 @@ export default function SettingsPage() {
             ) : null}
           </div>
 
-          <div className="mt-8 flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-600">
+          <div className="mt-8 flex flex-col gap-3 border-t border-(--line) pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-(--muted)">
               Your choices are saved to your account and loaded each time you return to settings.
             </p>
             <button
               type="submit"
               disabled={isSaving}
-              className="rounded-full bg-teal-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:bg-slate-400">
+              className="rounded-full bg-(--accent) px-6 py-3 text-sm font-semibold text-white transition brightness-100 hover:brightness-95 disabled:bg-(--toggle-off)">
               {isSaving ? "Saving settings..." : "Save settings"}
             </button>
           </div>

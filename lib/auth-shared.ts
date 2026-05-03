@@ -1,4 +1,5 @@
 export type UserRole = "admin" | "patient" | "doctor";
+export type ThemePreference = "system" | "light" | "dark";
 
 export type SessionUser = {
   userId: string;
@@ -36,7 +37,7 @@ export type PrescriptionRecord = {
 export type SettingsFormData = {
   role: "admin" | "patient" | "doctor";
   preferredLanguage: string;
-  themePreference: string;
+  themePreference: ThemePreference;
   emailNotifications: boolean;
   smsNotifications: boolean;
   appointmentReminders: boolean;

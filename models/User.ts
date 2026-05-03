@@ -21,7 +21,7 @@ const userSchema = new Schema(
     medicalConditions: { type: String, trim: true, default: "" },
     currentMedications: { type: String, trim: true, default: "" },
     preferredLanguage: { type: String, trim: true, default: "English" },
-    themePreference: { type: String, trim: true, default: "system" },
+    themePreference: { type: String, enum: ["system", "light", "dark"], trim: true, default: "system" },
     emailNotifications: { type: Boolean, default: true },
     smsNotifications: { type: Boolean, default: false },
     appointmentReminders: { type: Boolean, default: true },

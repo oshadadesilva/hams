@@ -32,10 +32,10 @@ export default function Home() {
           <h1 className="text-1xl md:text-2xl lg:text-3xl font-bold text-slate-600 leading-tight uppercase tracking-[0.12em] ">
             Healthcare Appointment Management System
           </h1>
-          <h4 className="mt-4 text-0.5xl md:text-1xl lg:text-2xl font-boldtext-slate-600 leading-tight text-slate-900">
+          {/* <h4 className="mt-4 text-0.5xl md:text-1xl lg:text-2xl font-boldtext-slate-600 leading-tight text-slate-900">
             hams turns appointment booking and doctor scheduling <br className="hidden md:block" />
             into one connected workflow.
-          </h4>
+          </h4> */}
         </div>
 
         <HomeCarousel />
@@ -64,7 +64,7 @@ export default function Home() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg p-8 border border-slate-200">
-          <div className="bg-blue-50 rounded-xl p-6 mb-6">
+          <div className="bg-slate-50 rounded-xl p-6 mb-6">
             <h3 className="text-xl font-semibold text-slate-900 mb-2">
               Smart Appointment Suggestion
             </h3>

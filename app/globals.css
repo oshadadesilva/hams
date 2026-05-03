@@ -5,10 +5,39 @@
   --foreground: #12343b;
   --panel: rgba(255, 255, 255, 0.82);
   --panel-strong: #fffaf4;
+  --field: #ffffff;
+  --field-strong: #f8fafc;
   --accent: #0f766e;
   --accent-2: #f59e0b;
   --muted: #5b6b73;
   --line: rgba(18, 52, 59, 0.12);
+  --body-start: #fcfaf7;
+  --body-mid: #f4efe7;
+  --body-end: #e8f1ef;
+  --glow-primary: rgba(15, 118, 110, 0.18);
+  --glow-secondary: rgba(245, 158, 11, 0.18);
+  --shadow-soft: rgba(18, 52, 59, 0.08);
+  --toggle-off: #cbd5e1;
+}
+
+html[data-theme="dark"] {
+  --background: #081315;
+  --foreground: #edf7f5;
+  --panel: rgba(15, 25, 28, 0.82);
+  --panel-strong: #101c1f;
+  --field: #152427;
+  --field-strong: #1d2d31;
+  --accent: #2dd4bf;
+  --accent-2: #fbbf24;
+  --muted: #a7b6bd;
+  --line: rgba(226, 241, 238, 0.14);
+  --body-start: #071112;
+  --body-mid: #0d191c;
+  --body-end: #132522;
+  --glow-primary: rgba(45, 212, 191, 0.16);
+  --glow-secondary: rgba(251, 191, 36, 0.12);
+  --shadow-soft: rgba(0, 0, 0, 0.28);
+  --toggle-off: #475569;
 }
 
 @theme inline {
@@ -32,9 +61,12 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), "Segoe UI", sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.18), transparent 28%),
-    radial-gradient(circle at top right, rgba(245, 158, 11, 0.18), transparent 24%),
-    linear-gradient(180deg, #fcfaf7 0%, #f4efe7 52%, #e8f1ef 100%);
+    radial-gradient(circle at top left, var(--glow-primary), transparent 28%),
+    radial-gradient(circle at top right, var(--glow-secondary), transparent 24%),
+    linear-gradient(180deg, var(--body-start) 0%, var(--body-mid) 52%, var(--body-end) 100%);
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
 }
 
 a {
@@ -52,4 +84,34 @@ textarea {
 
 ::selection {
   background: rgba(15, 118, 110, 0.2);
+}
+
+html[data-theme="dark"] :is(.text-slate-950, .text-slate-900, .text-slate-800, .hover\:text-slate-900:hover) {
+  color: var(--foreground);
+}
+
+html[data-theme="dark"] :is(.text-slate-700, .text-slate-600, .text-slate-500) {
+  color: var(--muted);
+}
+
+html[data-theme="dark"] :is(.bg-white, .bg-white\/80, .bg-white\/90, .bg-white\/95) {
+  background-color: var(--field);
+}
+
+html[data-theme="dark"] :is(.bg-slate-50, .bg-slate-100, .hover\:bg-teal-50:hover) {
+  background-color: var(--field-strong);
+}
+
+html[data-theme="dark"] :is(.border-slate-100, .border-slate-200, .border-slate-300) {
+  border-color: var(--line);
+}
+
+html[data-theme="dark"] :is(input, select, textarea) {
+  background-color: var(--field);
+  border-color: var(--line);
+  color: var(--foreground);
+}
+
+html[data-theme="dark"] :is(input, select, textarea)::placeholder {
+  color: var(--muted);
 }

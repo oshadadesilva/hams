@@ -144,7 +144,7 @@ export async function GET(request: Request) {
       hospitalName: hospitalSchedule.hospitalName,
       dateRange: {
         from: dateWindow[0],
-        to: dateWindow[dateWindow.length - 1],
+        to: dateWindow.at(dateWindow.length > 0 ? dateWindow.length - 1 : dateWindow.length),
       },
       days,
     });

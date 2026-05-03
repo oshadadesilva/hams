@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
+import type { ThemePreference } from "@/lib/auth-shared";
 import { serializeUserProfile } from "@/lib/user-profile";
 import User from "@/models/User";
+
+const themePreferences = ["system", "light", "dark"] as const;
 
 function cleanText(value: unknown, fallback = "") {
   return typeof value === "string" ? value.trim() : fallback;
@@ -10,6 +13,10 @@ function cleanText(value: unknown, fallback = "") {
 
 function cleanBoolean(value: unknown, fallback: boolean) {
   return typeof value === "boolean" ? value : fallback;
+}
+
+function cleanThemePreference(value: unknown): ThemePreference {
+  return themePreferences.includes(value as ThemePreference) ? (value as ThemePreference) : "system";
 }
 
 export async function PUT(request: Request) {
@@ -36,7 +43,7 @@ export async function PUT(request: Request) {
     }
 
     user.preferredLanguage = cleanText(body.preferredLanguage, "English") || "English";
-    user.themePreference = cleanText(body.themePreference, "system") || "system";
+    user.themePreference = cleanThemePreference(body.themePreference);
     user.emailNotifications = cleanBoolean(body.emailNotifications, true);
     user.smsNotifications = cleanBoolean(body.smsNotifications, false);
     user.appointmentReminders = cleanBoolean(body.appointmentReminders, true);

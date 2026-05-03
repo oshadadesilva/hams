@@ -71,7 +71,7 @@ export default function AppointmentsTable({
                                                     type="button"
                                                     title="View"
                                                     onClick={() => onView(appointment)}
-                                                    className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-700 hover:text-teal-700">
+                                                    className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-teal-700 transition hover:border-teal-700 hover:text-teal-700">
                                                     <Eye />
                                                 </button>
                                                 {showManageActions ? (
@@ -81,7 +81,7 @@ export default function AppointmentsTable({
                                                             title="Reschedule"
                                                             disabled={actionsDisabled}
                                                             onClick={() => onReschedule(appointment)}
-                                                            className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-700 hover:text-teal-700 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400">
+                                                            className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-amber-700 transition hover:border-amber-700 hover:text-amber-700 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400">
                                                             <CalendarCheck />
                                                         </button>
                                                         <button

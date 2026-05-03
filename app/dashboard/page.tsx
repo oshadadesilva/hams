@@ -477,8 +477,7 @@ export default function DashboardPage() {
                                         required
                                         value={selectedDoctorId}
                                         onChange={(event) => setSelectedDoctorId(event.target.value)}
-                                        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700"
-                                    >
+                                        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700">
                                         <option value="">Select doctor</option>
                                         {doctors.map((doctor) => (
                                             <option key={doctor._id} value={doctor._id}>
@@ -493,8 +492,7 @@ export default function DashboardPage() {
                                         required
                                         value={selectedHospital}
                                         onChange={(event) => setSelectedHospital(event.target.value)}
-                                        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700"
-                                    >
+                                        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700">
                                         <option value="">Select hospital</option>
                                         {availableHospitalOptions.map((hospitalName) => (
                                             <option key={hospitalName} value={hospitalName}>
@@ -510,8 +508,7 @@ export default function DashboardPage() {
                                         type="date"
                                         value={selectedDate}
                                         onChange={(event) => setSelectedDate(event.target.value)}
-                                        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700"
-                                    />
+                                        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700" />
                                 </label>
                                 <label className="grid gap-2 text-sm font-medium text-slate-700">
                                     Time slot
@@ -519,8 +516,7 @@ export default function DashboardPage() {
                                         required
                                         value={appointmentTime}
                                         onChange={(event) => setAppointmentTime(event.target.value)}
-                                        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700"
-                                    >
+                                        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700">
                                         {availableSlots.length > 0 ? (
                                             availableSlots.map((slot) => (
                                                 <option key={slot} value={slot}>
@@ -554,8 +550,7 @@ export default function DashboardPage() {
                                 <button
                                     type="submit"
                                     disabled={isSaving || !selectedDoctorId || !selectedDate || availableSlots.length === 0}
-                                    className="rounded-full bg-teal-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-                                >
+                                    className="rounded-full bg-teal-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400">
                                     {isSaving ? "Saving..." : "Save re-schedule"}
                                 </button>
                             </div>

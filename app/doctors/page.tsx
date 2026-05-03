@@ -287,7 +287,7 @@ export default function DoctorDashboard() {
                           title="Add prescription"
                           type="button"
                           onClick={() => openPrescriptionModal(apt)}
-                          className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-700 hover:text-teal-700 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400">
+                          className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-teal-700 transition hover:border-teal-700 hover:text-teal-700 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400">
                           <SquarePen />
                         </button>
                       </td>
