@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { CircleX } from 'lucide-react';
+import { CircleX, LaptopMinimalCheck, TriangleAlert, Ban } from 'lucide-react';
 
 
 import {
@@ -37,6 +37,18 @@ function getToastStyles(variant: ToastVariant) {
   return "border-sky-200 bg-sky-50 text-sky-900";
 }
 
+
+function getToastIcon(variant: ToastVariant) {
+  if (variant === "success") {
+    return <LaptopMinimalCheck className='mr-3' />;
+  }
+
+  if (variant === "error") {
+    return <Ban className='mr-3' />;
+  }
+  return <TriangleAlert className='mr-3' />;
+}
+
 export function ToastProvider({ children }: { readonly children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -61,7 +73,7 @@ export function ToastProvider({ children }: { readonly children: ReactNode }) {
             key={toast.id}
             className={`pointer-events-auto rounded-3xl border px-4 py-3 shadow-[0_14px_35px_rgba(18,52,59,0.12)] backdrop-blur ${getToastStyles(toast.variant)}`}>
             <div className="flex items-start justify-between gap-3">
-              <p className="text-sm font-medium leading-6">{toast.title}</p>
+              <p className="flex text-sm font-medium leading-6">{getToastIcon(toast.variant)} {toast.title}</p>
               {/* <button
                 type="button"
                 onClick={() => {

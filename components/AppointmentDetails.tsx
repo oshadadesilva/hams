@@ -1,10 +1,14 @@
-import { AppointmentRecord, formatDateTime } from "@/lib/auth-shared";
+import { AppointmentRecord, PrescriptionRecord, formatDateTime } from "@/lib/auth-shared";
 
 export default function AppointmentDetails({
     appointment,
+    prescription,
+    isPrescriptionLoading = false,
     onClose,
 }: Readonly<{
     appointment: AppointmentRecord;
+    prescription?: PrescriptionRecord | null;
+    isPrescriptionLoading?: boolean;
     onClose: () => void;
 }>) {
     return (
@@ -50,6 +54,30 @@ export default function AppointmentDetails({
                     <p className="mt-2 text-sm text-slate-700">{appointment.reason || "No reason provided."}</p>
                 </article>
             </div>
+
+            {appointment.status === "completed" ? (
+                <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5">
+                    <p className="text-sm font-medium uppercase tracking-[0.24em] text-teal-700">Prescription Details</p>
+                    {isPrescriptionLoading ? (
+                        <p className="mt-3 text-sm text-slate-600">Loading prescription details...</p>
+                    ) : prescription ? (
+                        <div className="mt-4 grid gap-4 md:grid-cols-2">
+                            <article>
+                                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Prescription</p>
+                                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{prescription.prescriptionDetails}</p>
+                            </article>
+                            <article>
+                                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Doctor Comments</p>
+                                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                                    {prescription.doctorComments || "No comments provided."}
+                                </p>
+                            </article>
+                        </div>
+                    ) : (
+                        <p className="mt-3 text-sm text-slate-600">No prescription details were found for this completed appointment.</p>
+                    )}
+                </section>
+            ) : null}
         </section>
     );
 }

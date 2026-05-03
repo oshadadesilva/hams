@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ToastProvider";
-import { AppointmentRecord, SessionUser, formatDateLabel, formatTime12 } from "@/lib/auth-shared";
+import { AppointmentRecord, PrescriptionRecord, SessionUser, formatDateLabel, formatTime12 } from "@/lib/auth-shared";
 import { generateHalfHourSlots, getDayName, type DoctorSeed } from "@/lib/demo-data";
 import { findHospitalAvailability } from "@/lib/doctor-schedule";
 import StatisticsCards from "@/components/StatisticsCards";
@@ -35,6 +35,8 @@ export default function DashboardPage() {
     const [reason, setReason] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [selectedPrescription, setSelectedPrescription] = useState<PrescriptionRecord | null>(null);
+    const [isPrescriptionLoading, setIsPrescriptionLoading] = useState(false);
     const appointmentDetailsRef = useRef<HTMLDivElement | null>(null);
     const rescheduleSectionRef = useRef<HTMLElement | null>(null);
 
@@ -176,13 +178,38 @@ export default function DashboardPage() {
         }
     }, [editingAppointment]);
 
-    function openAppointmentDetails(appointment: AppointmentRecord) {
+    async function openAppointmentDetails(appointment: AppointmentRecord) {
         stopRescheduling();
         setSelectedAppointmentId(appointment._id);
+        setSelectedPrescription(null);
+
+        if (appointment.status !== "completed") {
+            return;
+        }
+
+        setIsPrescriptionLoading(true);
+
+        try {
+            const response = await fetch(`/api/appointments/${appointment._id}/prescription`, { cache: "no-store" });
+            const data = await response.json() as { success: boolean; prescription?: PrescriptionRecord | null; message?: string };
+
+            if (!response.ok || !data.success) {
+                toast.error(data.message ?? "Unable to load prescription details.");
+                return;
+            }
+
+            setSelectedPrescription(data.prescription ?? null);
+        } catch (error) {
+            console.error(error);
+            toast.error("Unable to load prescription details right now.");
+        } finally {
+            setIsPrescriptionLoading(false);
+        }
     }
 
     function startRescheduling(appointment: AppointmentRecord) {
         setSelectedAppointmentId("");
+        setSelectedPrescription(null);
         setEditingAppointmentId(appointment._id);
         setSelectedDoctorId(appointment.doctorId);
         setSelectedHospital(appointment.hospitalName);
@@ -250,6 +277,7 @@ export default function DashboardPage() {
             );
 
             setSelectedAppointmentId(data.appointment._id);
+            setSelectedPrescription(null);
             closeCancelModal();
 
             if (editingAppointmentId === pendingCancelAppointment._id) {
@@ -302,6 +330,7 @@ export default function DashboardPage() {
                 current.map((appointment) => (appointment._id === data.appointment?._id ? data.appointment : appointment))
             );
             setSelectedAppointmentId(data.appointment._id);
+            setSelectedPrescription(null);
             stopRescheduling();
             toast.success("Appointment re-scheduled successfully.");
         } catch (error) {
@@ -383,7 +412,12 @@ export default function DashboardPage() {
                     <div ref={appointmentDetailsRef}>
                         <AppointmentDetails
                             appointment={selectedAppointment}
-                            onClose={() => setSelectedAppointmentId("")}
+                            prescription={selectedPrescription}
+                            isPrescriptionLoading={isPrescriptionLoading}
+                            onClose={() => {
+                                setSelectedAppointmentId("");
+                                setSelectedPrescription(null);
+                            }}
                         />
                     </div>
                 ) : null}
@@ -398,8 +432,7 @@ export default function DashboardPage() {
                             <button
                                 type="button"
                                 onClick={stopRescheduling}
-                                className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-700 hover:text-teal-700"
-                            >
+                                className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-700 hover:text-teal-700">
                                 Cancel editing
                             </button>
                         </div>

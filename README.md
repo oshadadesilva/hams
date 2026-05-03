@@ -11,6 +11,7 @@ HAMS is a full-stack healthcare appointment system built with Next.js App Router
 - Mongoose 9.4.1
 - Tailwind CSS 4
 - Lucide React
+- Framer Motion 12.38.0
 - ESLint 9
 
 ## Installed Dependencies
@@ -22,6 +23,7 @@ HAMS is a full-stack healthcare appointment system built with Next.js App Router
 - `react-dom`
 - `mongoose`
 - `lucide-react`
+- `framer-motion`
 
 ### Dev dependencies
 

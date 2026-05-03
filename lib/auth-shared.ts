@@ -24,6 +24,30 @@ export type AppointmentRecord = {
   updatedAt?: string;
 };
 
+export type PrescriptionRecord = {
+  _id: string;
+  appointmentId: string;
+  prescriptionDetails: string;
+  doctorComments?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type SettingsFormData = {
+  role: "admin" | "patient" | "doctor";
+  preferredLanguage: string;
+  themePreference: string;
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+  appointmentReminders: boolean;
+  marketingUpdates: boolean;
+  shareMedicalProfile: boolean;
+  allowNewRegistrations: boolean;
+  autoApproveAppointments: boolean;
+  showDoctorDirectory: boolean;
+  systemAlertEmail: string;
+};
+
 export function formatDateLabel(date: string) {
   return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
     weekday: "short",

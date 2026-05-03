@@ -15,11 +15,8 @@ export default function CancelConfirmationModal({
 }>) {
     return (
         <div
-            className={`fixed inset-0 z-50 flex items-center justify-center px-4 transition-all duration-300 ease-in-out ${isOpen ? "pointer-events-auto bg-slate-950/45 opacity-100" : "pointer-events-none bg-slate-950/0 opacity-0"
-                }`}>
-            <div
-                className={`w-full max-w-md rounded-4xl border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.22)] transition-all duration-300 ease-in-out sm:p-8 ${isOpen ? "translate-y-0 scale-100 opacity-100" : "translate-y-4 scale-95 opacity-0"
-                    }`}>
+            className={`fixed inset-0 z-50 flex items-center justify-center px-4 transition-all duration-300 ease-in-out ${isOpen ? "pointer-events-auto bg-slate-950/45 opacity-100" : "pointer-events-none bg-slate-950/0 opacity-0"}`}>
+            <div className={`w-full max-w-md rounded-4xl border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.22)] transition-all duration-300 ease-in-out sm:p-8 ${isOpen ? "translate-y-0 scale-100 opacity-100" : "translate-y-4 scale-95 opacity-0"}`}>
                 <p className="text-sm font-medium uppercase tracking-[0.28em] text-rose-600">Cancel Appointment</p>
                 <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">Confirm Cancellation</h2>
                 <p className="mt-4 text-sm leading-7 text-slate-600">

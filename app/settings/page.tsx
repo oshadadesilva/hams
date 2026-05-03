@@ -4,21 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ToastProvider";
-
-type SettingsFormData = {
-  role: "admin" | "patient" | "doctor";
-  preferredLanguage: string;
-  themePreference: string;
-  emailNotifications: boolean;
-  smsNotifications: boolean;
-  appointmentReminders: boolean;
-  marketingUpdates: boolean;
-  shareMedicalProfile: boolean;
-  allowNewRegistrations: boolean;
-  autoApproveAppointments: boolean;
-  showDoctorDirectory: boolean;
-  systemAlertEmail: string;
-};
+import ToggleCard from "@/components/ToggleCard";
+import { SettingsFormData } from "@/lib/auth-shared";
 
 const defaultSettings: SettingsFormData = {
   role: "patient",
@@ -34,37 +21,6 @@ const defaultSettings: SettingsFormData = {
   showDoctorDirectory: true,
   systemAlertEmail: "",
 };
-
-type ToggleCardProps = Readonly<{
-  title: string;
-  description: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}>;
-
-function ToggleCard({ title, description, checked, onChange }: ToggleCardProps) {
-  return (
-    <label className="flex items-start justify-between gap-4 rounded-3xl border border-slate-200 bg-white px-5 py-4">
-      <div>
-        <div className="text-sm font-semibold text-slate-900">{title}</div>
-        <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
-      </div>
-      <span
-        className={`relative mt-1 inline-flex h-7 w-12 shrink-0 items-center rounded-full transition ${checked ? "bg-teal-700" : "bg-slate-300"
-          }`}>
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(event) => onChange(event.target.checked)}
-          className="peer sr-only" />
-        <span
-          className={`inline-block h-5 w-5 rounded-full bg-white shadow transition ${checked ? "translate-x-6" : "translate-x-1"
-            }`}
-        />
-      </span>
-    </label>
-  );
-}
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -190,8 +146,7 @@ export default function SettingsPage() {
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-4xl border border-(--line) bg-(--panel-strong) p-8 shadow-[0_18px_55px_rgba(18,52,59,0.08)]"
-        >
+          className="rounded-4xl border border-(--line) bg-(--panel-strong) p-8 shadow-[0_18px_55px_rgba(18,52,59,0.08)]">
           <div className="grid gap-8">
             <section className="grid gap-5">
               <div>
@@ -204,8 +159,7 @@ export default function SettingsPage() {
                   <select
                     value={form.preferredLanguage}
                     onChange={(event) => updateField("preferredLanguage", event.target.value)}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700"
-                  >
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700">
                     <option value="English">English</option>
                     <option value="Sinhala">Sinhala</option>
                     <option value="Tamil">Tamil</option>
@@ -216,8 +170,7 @@ export default function SettingsPage() {
                   <select
                     value={form.themePreference}
                     onChange={(event) => updateField("themePreference", event.target.value)}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700"
-                  >
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-teal-700">
                     <option value="system">System default</option>
                     <option value="light">Light</option>
                     <option value="dark">Dark</option>
@@ -301,8 +254,7 @@ export default function SettingsPage() {
                   />
                   <Link
                     href="/settings/doctor-accounts"
-                    className="rounded-3xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-900 transition hover:border-teal-700 hover:text-teal-700"
-                  >
+                    className="rounded-3xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-900 transition hover:border-teal-700 hover:text-teal-700">
                     Create doctor login accounts
                   </Link>
                 </div>
@@ -327,8 +279,7 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={isSaving}
-              className="rounded-full bg-teal-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:bg-slate-400"
-            >
+              className="rounded-full bg-teal-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:bg-slate-400">
               {isSaving ? "Saving settings..." : "Save settings"}
             </button>
           </div>

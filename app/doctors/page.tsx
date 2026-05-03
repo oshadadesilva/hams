@@ -5,9 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
+import PatientDetails from "@/components/PatientDetails";
 import { type DoctorSeed } from "@/lib/demo-data";
 import { SessionUser, AppointmentRecord } from "@/lib/auth-shared";
 import { flattenHospitalAvailability } from "@/lib/doctor-schedule";
+import { SquarePen } from "lucide-react";
 
 function formatDateLabel(date: string) {
   return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
@@ -49,6 +51,7 @@ export default function DoctorDashboard() {
   const [editorSlots, setEditorSlots] = useState<ReturnType<typeof flattenHospitalAvailability>>([]);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentRecord | null>(null);
 
 
   useEffect(() => {
@@ -108,7 +111,7 @@ export default function DoctorDashboard() {
           }
 
           if (appointmentsResponse.ok && appointmentsData.success) {
-            setAppointments(appointmentsData.appointments.filter((appointment) => appointment.status === "booked").toSorted(
+            setAppointments(appointmentsData.appointments.toSorted(
               (a, b) =>
                 new Date(`${b.appointmentDate}T${b.appointmentTime}:00`).getTime() -
                 new Date(`${a.appointmentDate}T${a.appointmentTime}:00`).getTime()
@@ -142,6 +145,20 @@ export default function DoctorDashboard() {
     void loadDoctors();
 
   }, [router, toast]);
+
+  function openPrescriptionModal(appointment: AppointmentRecord) {
+    setSelectedAppointment(appointment);
+  }
+
+  function handleAppointmentCompleted(completedAppointment: AppointmentRecord) {
+    setAppointments((current) =>
+      current.map((appointment) =>
+        appointment._id === completedAppointment._id ? completedAppointment : appointment
+      )
+    );
+    setSelectedAppointment(null);
+  }
+
 
   if (isLoading) {
     return (
@@ -190,20 +207,40 @@ export default function DoctorDashboard() {
           </div>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-3">
+        <section className="grid gap-4 md:grid-cols-3 text-aline-center">
           <article className="rounded-[1.75rem] border border-(--line) bg-(--panel) p-6 shadow-[0_12px_40px_rgba(18,52,59,0.06)]">
-            <h2 className="text-xl font-semibold text-slate-900">Today&apos;s Appointments</h2>
-            <p className="mt-1 text-4xl font-bold text-teal-700">{appointments.length}</p>
-            <p className="mt-3 text-sm leading-7 text-slate-600">{appointments.filter((a) => a.status === "book").length}  Completed, {appointments.filter((a) => a.status === "cancelled").length} Cancelled.</p>
+            <h2 className="text-sm font-medium uppercase tracking-[0.28em] text-slate-600">Today&apos;s Appointments</h2>
+            <p className="mt-1 text-6xl font-bold text-teal-700">{appointments.length}</p>
+            <p className="mt-3 text-sm leading-7 text-slate-600">{appointments.filter((a) => a.status === "completed").length}  Completed, {appointments.filter((a) => a.status === "cancelled").length} Cancelled.</p>
           </article>
-          <article className="rounded-[1.75rem] border border-(--line) bg-(--panel) p-6 shadow-[0_12px_40px_rgba(18,52,59,0.06)]">
-            <h2 className="text-xl font-semibold text-slate-900">Total Patients</h2>
+
+          {/* <article className="rounded-[1.75rem] border border-(--line) bg-(--panel) p-6 shadow-[0_12px_40px_rgba(18,52,59,0.06)]"> */}
+          {/* <h2 className="text-xl font-semibold text-slate-900">Total Patients</h2>
             <p className="mt-1 text-4xl font-bold text-teal-700">48</p>
-            <p className="mt-3 text-sm leading-7 text-slate-600">Active under your care.</p>
+            <p className="mt-3 text-sm leading-7 text-slate-600">Active under your care.</p> */}
+          {/* </article> */}
+
+          <article className="rounded-4xl border border-(--line) bg-(--panel) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)]">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">My Availability</p>
+              <Link href="/doctors/availability" className="text-xs font-medium text-teal-700 hover:underline">
+                Edit →
+              </Link>
+            </div>
+            <ul className="mt-4 space-y-2 text-sm">
+              {editorSlots.filter(s => s.isAvailable).slice(0, 5).map((slot) => (
+                <li key={slot.day + slot.hospitalName} className="flex justify-between">
+                  <span className="font-medium text-slate-700">{slot.hospitalName ?? ""}</span>
+                  <span className="font-medium text-slate-700">{slot.day}</span>
+                  <span className="text-slate-600">{slot.startTime} – {slot.endTime}</span>
+                </li>
+              ))}
+            </ul>
           </article>
+
           <article className="rounded-[1.75rem] border border-(--line) bg-(--panel) p-6 shadow-[0_12px_40px_rgba(18,52,59,0.06)]">
-            <h2 className="text-xl font-semibold text-slate-900">Hours This Week</h2>
-            <p className="mt-1 text-4xl font-bold text-teal-700">32</p>
+            <h2 className="text-sm font-medium uppercase tracking-[0.28em] text-slate-600">Hours This Week</h2>
+            <p className="mt-1 text-6xl font-bold text-teal-700">32</p>
             <p className="mt-3 text-sm leading-7 text-slate-600">Scheduled clinical hours.</p>
           </article>
         </section>
@@ -215,7 +252,7 @@ export default function DoctorDashboard() {
                 <p className="text-sm font-medium uppercase tracking-[0.28em] text-amber-600">Appointments</p>
                 <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">Today&apos;s Schedule</h2>
               </div>
-              <Link href="/doctor/dashboard/appointments" className="text-sm font-medium text-teal-700 hover:underline">
+              <Link href="/dashboard" className="text-sm font-medium text-teal-700 hover:underline">
                 View all →
               </Link>
             </div>
@@ -223,17 +260,19 @@ export default function DoctorDashboard() {
               <table className="w-full text-sm">
                 <thead className="border-b border-slate-200">
                   <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    <th className="pb-3">Hospital Name</th>
                     <th className="pb-3">Date</th>
                     <th className="pb-3">Time</th>
-                    <th className="pb-3">Patient</th>
+                    <th className="pb-3">Patient Name</th>
                     <th className="pb-3">Reason</th>
                     <th className="pb-3">Status</th>
                     <th className="pb-3">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {appointments.map((apt) => (
+                  {appointments.filter((appointment) => appointment.status === "booked").map((apt) => (
                     <tr key={apt._id} className="text-slate-700">
+                      <td className="py-3 pr-4">{apt.hospitalName ?? "N/A"}</td>
                       <td className="py-3 pr-4">{formatDateLabel(apt.appointmentDate)}</td>
                       <td className="py-3 pr-4">{formatTime12(apt.appointmentTime)}</td>
                       <td className="py-3 pr-4 font-medium">{apt.patientName}</td>
@@ -244,8 +283,12 @@ export default function DoctorDashboard() {
                         </span>
                       </td>
                       <td className="py-3">
-                        <button className="text-teal-700 hover:underline text-xs font-medium">
-                          View EHR
+                        <button
+                          title="Add prescription"
+                          type="button"
+                          onClick={() => openPrescriptionModal(apt)}
+                          className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-700 hover:text-teal-700 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400">
+                          <SquarePen />
                         </button>
                       </td>
                     </tr>
@@ -255,49 +298,14 @@ export default function DoctorDashboard() {
             </div>
           </article>
 
-          {/* Right Column: Availability & Recent Patients
-          <div className="flex flex-col gap-6">
-            {/* Weekly Availability Card */}
-            {/* <article className="rounded-4xl border border-(--line) bg-(--panel) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)]">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">My Availability</p>
-                <Link href="/doctors/availability" className="text-xs font-medium text-teal-700 hover:underline">
-                  Edit →
-                </Link>
-              </div>
-              <ul className="mt-4 space-y-2 text-sm">
-                {editorSlots.filter(s => s.isAvailable).slice(0, 5).map((slot) => (
-                  <li key={slot.day} className="flex justify-between">
-                    <span className="font-medium text-slate-700">{slot.day}</span>
-                    <span className="text-slate-600">{slot.startTime} – {slot.endTime}</span>
-                  </li>
-                ))}
-              </ul>
-            </article> */}
+          {selectedAppointment ? (
+            <PatientDetails
+              selectedAppointment={selectedAppointment}
+              onClose={() => setSelectedAppointment(null)}
+              onCompleted={handleAppointmentCompleted}
+            />
+          ) : null}
 
-            {/* Recent Patients / EHR Access */}
-            {/* <article className="rounded-4xl border border-(--line) bg-(--panel) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)]">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium uppercase tracking-[0.28em] text-teal-700">Recent Patients</p>
-                <Link href="/doctor/dashboard/patients" className="text-xs font-medium text-teal-700 hover:underline">
-                  All patients →
-                </Link>
-              </div>
-              <ul className="mt-4 space-y-3">
-                {recentPatients.map((p) => (
-                  <li key={p.id} className="border-b border-slate-100 pb-3 last:border-0">
-                    <div className="flex justify-between">
-                      <span className="font-semibold text-slate-900">{p.name}</span>
-                      <span className="text-xs text-slate-400">{p.lastVisit}</span>
-                    </div>
-                    <p className="mt-1 text-sm text-slate-600">{p.condition}</p>
-                    <button className="mt-1 text-xs font-medium text-teal-700 hover:underline">
-                      View EHR Summary →
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </article> */}
         </section>
       </div>
     </main>
