@@ -1,41 +1,18 @@
 "use client";
 
 import Link from "next/link";
-// import { useState, useEffect } from "react";
 import { ArrowBigRightDash } from "lucide-react";
 import HomeCarousel from "@/components/HomeCarousel";
-
-// const carouselSlides = [
-//   {
-//     title: "📅 Book an Appointment",
-//     description: "Choose a doctor, pick an available time slot, and confirm instantly.",
-//     bgColor: "bg-gradient-to-br from-teal-50 to-teal-100",
-//   },
-//   {
-//     title: "👨‍⚕️ Manage Doctor Schedules",
-//     description: "Doctors can set weekly availability that feeds directly into booking.",
-//     bgColor: "bg-gradient-to-br from-amber-50 to-amber-100",
-//   },
-//   {
-//     title: "✅ Instant Confirmation",
-//     description: "Receive email/SMS confirmations – no double bookings, ever.",
-//     bgColor: "bg-gradient-to-br from-blue-50 to-blue-100",
-//   },
-// ];
 
 export default function Home() {
   return (
     <main className="min-h-screen px-6 py-8 sm:px-10 lg:px-12 relative">
       <div className="max-w-6xl mx-auto px-6 py-6 lg:py-6">
-        {/* Hero section */}
+
         <div className="text-center mb-6">
-          <h1 className="text-1xl md:text-2xl lg:text-3xl font-bold text-slate-600 leading-tight uppercase tracking-[0.12em] ">
+          <h1 className="text-1xl md:text-2xl lg:text-3xl font-bold text-slate-900 leading-tight uppercase tracking-[0.12em] ">
             Healthcare Appointment Management System
           </h1>
-          {/* <h4 className="mt-4 text-0.5xl md:text-1xl lg:text-2xl font-boldtext-slate-600 leading-tight text-slate-900">
-            hams turns appointment booking and doctor scheduling <br className="hidden md:block" />
-            into one connected workflow.
-          </h4> */}
         </div>
 
         <HomeCarousel />
@@ -141,7 +118,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
+
       <footer className="absolute bg-teal-900 text-slate-300 py-6 left-0 right-0">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <p>

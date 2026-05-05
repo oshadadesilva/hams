@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useToast } from "@/components/ToastProvider";
 import PatientDetails from "@/components/PatientDetails";
 import { type DoctorSeed } from "@/lib/demo-data";
@@ -34,6 +34,49 @@ function formatTime12(time: string) {
   const period = parsedHours >= 12 ? "PM" : "AM";
   const normalizedHours = parsedHours % 12 || 12;
   return `${normalizedHours}:${minutes.padStart(2, "0")} ${period}`;
+}
+
+function formatDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getWeekDays(referenceDate = new Date()) {
+  const startOfWeek = new Date(referenceDate);
+  const dayOffset = (startOfWeek.getDay() + 6) % 7;
+  startOfWeek.setHours(0, 0, 0, 0);
+  startOfWeek.setDate(startOfWeek.getDate() - dayOffset);
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(startOfWeek);
+    date.setDate(startOfWeek.getDate() + index);
+
+    return {
+      dateKey: formatDateKey(date),
+      dayName: date.toLocaleDateString("en-US", { weekday: "long" }),
+      label: date.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" }),
+    };
+  });
+}
+
+function parseTimeToMinutes(time: string) {
+  const [hours, minutes] = time.split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return 0;
+  }
+
+  return hours * 60 + minutes;
+}
+
+function getSlotHours(startTime: string, endTime: string) {
+  const durationMinutes = parseTimeToMinutes(endTime) - parseTimeToMinutes(startTime);
+  return durationMinutes > 0 ? durationMinutes / 60 : 0;
+}
+
+function formatHours(hours: number) {
+  return Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
 }
 
 // const recentPatients = [
@@ -84,6 +127,7 @@ export default function DoctorDashboard() {
             fetch("/api/appointments", { cache: "no-store" }),
             fetch("/api/doctors", { cache: "no-store" }),
           ]);
+
           const appointmentsData = await appointmentsResponse.json() as { success: boolean; appointments: AppointmentRecord[]; message?: string };
           const data = await doctorsResponse.json() as { success: boolean; doctors: DoctorSeed[]; message?: string };
 
@@ -159,6 +203,43 @@ export default function DoctorDashboard() {
     setSelectedAppointment(null);
   }
 
+  const weekDays = useMemo(() => getWeekDays(), []);
+  const weeklyAppointmentHours = useMemo(() => {
+    const weekDateKeys = new Set(weekDays.map((day) => day.dateKey));
+    const activeAppointments = appointments.filter(
+      (appointment) =>
+        weekDateKeys.has(appointment.appointmentDate) &&
+        appointment.status !== "cancelled"
+    );
+
+    const scheduledHoursByDay = new Map<string, number>();
+    for (const slot of editorSlots.filter((slot) => slot.isAvailable)) {
+      scheduledHoursByDay.set(
+        slot.day,
+        (scheduledHoursByDay.get(slot.day) ?? 0) + getSlotHours(slot.startTime, slot.endTime)
+      );
+    }
+
+    const rows = weekDays.map((day) => {
+      const dayAppointments = activeAppointments.filter((appointment) => appointment.appointmentDate === day.dateKey);
+      const appointmentHours = dayAppointments.length * 0.5;
+
+      return {
+        ...day,
+        appointmentCount: dayAppointments.length,
+        appointmentHours,
+        scheduledHours: scheduledHoursByDay.get(day.dayName) ?? 0,
+      };
+    });
+
+    return {
+      appointmentCount: activeAppointments.length,
+      appointmentHours: activeAppointments.length * 0.5,
+      scheduledHours: rows.reduce((total, row) => total + row.scheduledHours, 0),
+      rows,
+    };
+  }, [appointments, editorSlots, weekDays]);
+
 
   if (isLoading) {
     return (
@@ -210,15 +291,10 @@ export default function DoctorDashboard() {
         <section className="grid gap-4 md:grid-cols-3 text-aline-center">
           <article className="rounded-[1.75rem] border border-(--line) bg-(--panel) p-6 shadow-[0_12px_40px_rgba(18,52,59,0.06)]">
             <h2 className="text-sm font-medium uppercase tracking-[0.28em] text-slate-600">Today&apos;s Appointments</h2>
-            <p className="mt-1 text-6xl font-bold text-teal-700">{appointments.length}</p>
-            <p className="mt-3 text-sm leading-7 text-slate-600">{appointments.filter((a) => a.status === "completed").length}  Completed, {appointments.filter((a) => a.status === "cancelled").length} Cancelled.</p>
+            <p className="mt-1 text-6xl font-bold text-teal-700">{appointments.filter((a) => a.appointmentDate === new Date().toISOString().split('T')[0]).length}</p>
+            <p className="mt-3 text-sm leading-7 text-slate-600">{appointments.filter((a) => a.appointmentDate === new Date().toISOString().split('T')[0]).filter((a) => a.status === "completed").length}  Completed, {appointments.filter((a) => a.appointmentDate === new Date().toISOString().split('T')[0]).filter((a) => a.status === "cancelled").length} Cancelled.</p>
           </article>
 
-          {/* <article className="rounded-[1.75rem] border border-(--line) bg-(--panel) p-6 shadow-[0_12px_40px_rgba(18,52,59,0.06)]"> */}
-          {/* <h2 className="text-xl font-semibold text-slate-900">Total Patients</h2>
-            <p className="mt-1 text-4xl font-bold text-teal-700">48</p>
-            <p className="mt-3 text-sm leading-7 text-slate-600">Active under your care.</p> */}
-          {/* </article> */}
 
           <article className="rounded-4xl border border-(--line) bg-(--panel) p-6 shadow-[0_16px_48px_rgba(18,52,59,0.07)]">
             <div className="flex items-center justify-between">
@@ -239,9 +315,11 @@ export default function DoctorDashboard() {
           </article>
 
           <article className="rounded-[1.75rem] border border-(--line) bg-(--panel) p-6 shadow-[0_12px_40px_rgba(18,52,59,0.06)]">
-            <h2 className="text-sm font-medium uppercase tracking-[0.28em] text-slate-600">Hours This Week</h2>
-            <p className="mt-1 text-6xl font-bold text-teal-700">32</p>
-            <p className="mt-3 text-sm leading-7 text-slate-600">Scheduled clinical hours.</p>
+            <h2 className="text-sm font-medium uppercase tracking-[0.28em] text-slate-600">Appointment Hours This Week</h2>
+            <p className="mt-1 text-6xl font-bold text-teal-700">{formatHours(weeklyAppointmentHours.appointmentHours)}</p>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              <b>{weeklyAppointmentHours.appointmentCount} </b> active appointment{weeklyAppointmentHours.appointmentCount === 1 ? "" : "s"} across <b>{formatHours(weeklyAppointmentHours.scheduledHours)}</b> scheduled hour{weeklyAppointmentHours.scheduledHours === 1 ? "" : "s"}.
+            </p>
           </article>
         </section>
 
@@ -270,7 +348,7 @@ export default function DoctorDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {appointments.filter((appointment) => appointment.status === "booked").map((apt) => (
+                  {appointments.filter((a) => a.appointmentDate === new Date().toISOString().split('T')[0]).filter((appointment) => appointment.status === "booked").map((apt) => (
                     <tr key={apt._id} className="text-slate-700">
                       <td className="py-3 pr-4">{apt.hospitalName ?? "N/A"}</td>
                       <td className="py-3 pr-4">{formatDateLabel(apt.appointmentDate)}</td>
@@ -308,6 +386,6 @@ export default function DoctorDashboard() {
 
         </section>
       </div>
-    </main>
+    </main >
   );
 }

@@ -402,7 +402,7 @@ export default function AppointmentsPage() {
       return;
     }
 
-    globalThis.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
       if (pendingScrollTarget === "doctor-results") {
         doctorResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }
@@ -510,6 +510,13 @@ export default function AppointmentsPage() {
       setAvailabilityRefreshKey((current) => current + 1);
       toast.success("Appointment booked successfully.");
       setReason("");
+      setSelectedDoctorId("");
+      setHasConfirmedDoctorSelection(false);
+      setSelectedSpecialization("");
+      setSelectedHospital("");
+      setSelectedDate("");
+      setAppointmentTime("");
+      setPendingScrollTarget(null);
     } catch (error) {
       console.error(error);
       toast.error("The booking request failed. Check your MongoDB connection and try again.");
@@ -946,9 +953,6 @@ export default function AppointmentsPage() {
                                 : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
                               }`}>
                             <span className="block">{formatTime12(slot.time)}</span>
-                            {/* <span className="block text-xs font-medium">
-                              No. {slot.appointmentNumber} - {slot.bookedAppointmentsCount} booked
-                            </span> */}
                           </button>
                         );
                       })}

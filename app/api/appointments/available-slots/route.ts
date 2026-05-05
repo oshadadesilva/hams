@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { generateHalfHourSlots, getDayName } from "@/lib/demo-data";
+import { findDoctorByFlexibleId } from "@/lib/doctor-lookup";
 import { findHospitalAvailability, type DoctorHospitalLike } from "@/lib/doctor-schedule";
 import Appointment from "@/models/Appointment";
-import Doctor from "@/models/Doctor";
 
 type DoctorWithHospitals = {
   _id: { toString(): string };
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
 
     await connectDB();
 
-    const doctor = (await Doctor.findById(doctorId).lean()) as DoctorWithHospitals | null;
+    const doctor = await findDoctorByFlexibleId<DoctorWithHospitals>(doctorId);
     if (!doctor) {
       return NextResponse.json(
         { success: false, message: "Selected doctor was not found." },

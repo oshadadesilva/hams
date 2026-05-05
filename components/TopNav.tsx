@@ -45,7 +45,7 @@ export default function TopNav() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const response = await fetch("/api/auth/me", { cache: "no-store" });
+        const response = await fetch("/api/auth/me");
         const data = await response.json();
         if (response.ok && data.success) {
           setUser(data.user);

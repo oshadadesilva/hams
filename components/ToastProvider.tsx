@@ -56,7 +56,7 @@ export function ToastProvider({ children }: { readonly children: ReactNode }) {
     const id = Date.now() + Math.floor(Math.random() * 1000);
     setToasts((current) => [...current, { id, title, variant }]);
 
-    globalThis.setTimeout(() => {
+    window.setTimeout(() => {
       setToasts((current) => current.filter((toast) => toast.id !== id));
     }, 3200);
 

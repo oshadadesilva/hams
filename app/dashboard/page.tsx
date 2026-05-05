@@ -244,7 +244,7 @@ export default function DashboardPage() {
 
     function closeCancelModal() {
         setIsCancelModalOpen(false);
-        globalThis.setTimeout(() => {
+        window.setTimeout(() => {
             setPendingCancelAppointmentId("");
         }, 200);
     }
