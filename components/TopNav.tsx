@@ -196,7 +196,7 @@ export default function TopNav() {
     <header className="sticky top-0 z-40 border-b border-(--line) bg-(--panel) backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4 sm:px-10 lg:px-16">
         <div className="flex items-center gap-8">
-          <Link href="/" className="text-lg font-semibold tracking-tight text-(--foreground)">
+          <Link href="/" className="text-lg font-semibold tracking-tight text-foreground">
             HAMS
           </Link>
           <nav className="hidden items-center gap-5 md:flex">
@@ -206,7 +206,7 @@ export default function TopNav() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-sm font-medium transition ${isActive ? "text-(--accent)" : "text-(--muted) hover:text-(--foreground)"
+                  className={`text-sm font-medium transition ${isActive ? "text-(--accent)" : "text-(--muted) hover:text-foreground"
                     }`}>
                   {link.label}
                 </Link>
