@@ -2,7 +2,7 @@ import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypt
 import type { NextRequest } from "next/server";
 export { type AppointmentRecord, type SessionUser, type UserRole } from "@/lib/auth-shared";
 export const AUTH_COOKIE_NAME = "hams_auth";
-export const SESSION_DURATION_SECONDS = 60 * 60 * 24;// * 7;
+export const SESSION_DURATION_SECONDS = 60 * 60 * 24;
 import type { SessionUser, UserRole } from "@/lib/auth-shared";
 
 
@@ -129,72 +129,3 @@ export function hasRequiredRole(role: UserRole, allowedRoles: UserRole[]) {
   return allowedRoles.includes(role);
 }
 
-// export const authService = {
-//   login: async (email: string, password: string): Promise<SessionUser | null> => {
-//     try {
-//       const response = await fetch('/api/auth/login', {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify({ email, password }),
-//       });
-
-//       if (response.ok) {
-//         const data = await response.json();
-//         sessionStorage.setItem('token', data.token);
-//         sessionStorage.setItem('user', JSON.stringify(data.user));
-//         return data.user;
-//       }
-//       return null;
-//     } catch (error) {
-//       console.error('Login error:', error);
-//       return null;
-//     }
-//   },
-
-//   signup: async (email: string, password: string, name: string, role: string): Promise<SessionUser | null> => {
-//     try {
-//       const response = await fetch('/api/auth/signup', {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify({ email, password, name, role }),
-//       });
-
-//       if (response.ok) {
-//         const data = await response.json();
-//         sessionStorage.setItem('token', data.token);
-//         sessionStorage.setItem('user', JSON.stringify(data.user));
-//         return data.user;
-//       }
-//       return null;
-//     } catch (error) {
-//       console.error('Signup error:', error);
-//       return null;
-//     }
-//   },
-
-//   logout: () => {
-//     if (typeof window !== 'undefined') {
-//       sessionStorage.removeItem('token');
-//       sessionStorage.removeItem('user');
-//     }
-//   },
-
-//   getCurrentUser: (): SessionUser | null => {
-//     if (typeof window !== 'undefined') {
-//       const user = sessionStorage.getItem('user');
-//       return user ? JSON.parse(user) : null;
-//     }
-//     return null;
-//   },
-
-//   getToken: (): string | null => {
-//     if (typeof window !== 'undefined') {
-//       return sessionStorage.getItem('token');
-//     }
-//     return null;
-//   },
-
-//   isAuthenticated: (): boolean => {
-//     return authService.getCurrentUser() !== null && authService.getToken() !== null;
-//   }
-// }
