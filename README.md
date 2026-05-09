@@ -48,7 +48,7 @@ Create `.env.local` in the project root.
 
 ```env
 MONGODB_URI=mongodb://localhost:27017/hams
-JWT_SECRET=replace-with-a-long-random-secret
+JWT_SECRET=8b1d9b7f0e6c4f2a91d7e3b6c8f40a5e9d2c7b1f6a3e8d4c0f9b5a2e7d1c6f8
 ```
 
 Notes:
